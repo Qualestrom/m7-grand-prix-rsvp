@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { EVENT_CONFIG } from '../config/eventConfig';
 import { M7Logo } from './M7Logo';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, MapPin, Navigation } from 'lucide-react';
 
 interface PaddockPassProps {
   onConfirmGridSlot: () => void;
@@ -58,29 +58,83 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
             TURNING 7 • GRAND PRIX
           </p>
 
-          {/* Minimal Party Details (Date & Time) */}
-          <div className="w-full grid grid-cols-2 gap-4 mb-8">
-            {/* Date */}
-            <div className="bg-[#12121A] border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-inner">
-              <Calendar size={20} className="text-[#E10600] mb-2" />
-              <span className="font-telemetry text-[11px] text-[#8E8E98] uppercase font-bold tracking-wider">
-                DATE
-              </span>
-              <span className="font-f1-head text-sm sm:text-base font-bold text-white mt-1">
-                {EVENT_CONFIG.date}
-              </span>
+          {/* Party Details (Date, Time, Venue) */}
+          <div className="w-full flex flex-col gap-3 mb-8">
+            {/* Date & Time Row */}
+            <div className="w-full grid grid-cols-2 gap-3">
+              {/* Date */}
+              <div className="bg-[#12121A] border border-white/10 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-inner">
+                <Calendar size={18} className="text-[#E10600] mb-1.5" />
+                <span className="font-telemetry text-[10px] text-[#8E8E98] uppercase font-bold tracking-wider">
+                  DATE
+                </span>
+                <span className="font-f1-head text-xs sm:text-sm font-bold text-white mt-0.5">
+                  {EVENT_CONFIG.date}
+                </span>
+              </div>
+
+              {/* Time */}
+              <div className="bg-[#12121A] border border-white/10 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-inner">
+                <Clock size={18} className="text-[#00D2BE] mb-1.5" />
+                <span className="font-telemetry text-[10px] text-[#8E8E98] uppercase font-bold tracking-wider">
+                  TIME
+                </span>
+                <span className="font-f1-head text-xs sm:text-sm font-bold text-white mt-0.5">
+                  {EVENT_CONFIG.time}
+                </span>
+              </div>
             </div>
 
-            {/* Time */}
-            <div className="bg-[#12121A] border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-inner">
-              <Clock size={20} className="text-[#00D2BE] mb-2" />
-              <span className="font-telemetry text-[11px] text-[#8E8E98] uppercase font-bold tracking-wider">
-                TIME
-              </span>
-              <span className="font-f1-head text-sm sm:text-base font-bold text-white mt-1">
-                {EVENT_CONFIG.time}
-              </span>
-            </div>
+            {/* Circuit Venue Card */}
+            {EVENT_CONFIG.venueName && (
+              <div className="w-full bg-[#12121A] border border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left shadow-inner">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#E10600]/15 border border-[#E10600]/30 flex items-center justify-center shrink-0">
+                    <MapPin size={18} className="text-[#E10600]" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-telemetry text-[10px] text-[#8E8E98] uppercase font-bold tracking-wider block">
+                      CIRCUIT VENUE
+                    </span>
+                    <p className="font-f1-head text-xs sm:text-sm font-bold text-white truncate">
+                      {EVENT_CONFIG.venueName}
+                    </p>
+                    {EVENT_CONFIG.venueAddress && (
+                      <p className="text-[11px] text-[#8E8E98] font-telemetry truncate">
+                        {EVENT_CONFIG.venueAddress}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {EVENT_CONFIG.googleMapsUrl && (
+                    <a
+                      href={EVENT_CONFIG.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[#E10600]/20 border border-white/10 hover:border-[#E10600]/40 text-white transition-all cursor-pointer flex items-center gap-1"
+                      title="Open in Google Maps"
+                    >
+                      <MapPin size={12} className="text-[#E10600]" />
+                      <span className="font-telemetry text-[10px] font-bold hidden sm:inline">MAP</span>
+                    </a>
+                  )}
+                  {EVENT_CONFIG.wazeUrl && (
+                    <a
+                      href={EVENT_CONFIG.wazeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[#00D2BE]/20 border border-white/10 hover:border-[#00D2BE]/40 text-white transition-all cursor-pointer flex items-center gap-1"
+                      title="Open in Waze"
+                    >
+                      <Navigation size={12} className="text-[#00D2BE]" />
+                      <span className="font-telemetry text-[10px] font-bold hidden sm:inline">WAZE</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Primary CTA: I Will Attend */}
