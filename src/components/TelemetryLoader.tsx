@@ -79,6 +79,16 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
           </p>
         </motion.div>
       </motion.div>
+
+      {/* Tap anywhere cue */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0.3, 0.75, 0.3] }}
+        transition={{ delay: 0.8, duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 font-telemetry text-[11px] tracking-[0.25em] text-[#8E8E98] uppercase z-10 text-center whitespace-nowrap -mr-[0.25em]"
+      >
+        TAP ANYWHERE TO CONTINUE
+      </motion.div>
     </div>
   );
 };

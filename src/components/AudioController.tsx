@@ -15,10 +15,10 @@ export const AudioController: React.FC = () => {
       setIsMuted(muted);
     });
 
-    // Let the users know "Want some Music?" for 4.5 seconds, then gracefully shrink into a circle button
+    // Let the users know "Want some Music? / Best for full immersion" for 5 seconds, then gracefully shrink into a circle button
     const shrinkTimer = setTimeout(() => {
       setIsExpanded(false);
-    }, 4500);
+    }, 5000);
 
     return () => {
       unsubscribe();
@@ -48,17 +48,17 @@ export const AudioController: React.FC = () => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         type="button"
-        className={`group h-10 sm:h-11 rounded-full border transition-all duration-500 ease-in-out flex items-center cursor-pointer backdrop-blur-md select-none shadow-xl overflow-hidden ${
+        className={`group h-11 sm:h-12 rounded-full border transition-all duration-500 ease-in-out flex items-center cursor-pointer backdrop-blur-md select-none shadow-xl overflow-hidden ${
           showText
-            ? 'px-3.5 sm:px-4 max-w-[270px]'
-            : 'w-10 sm:w-11 justify-center p-0 max-w-[44px]'
+            ? 'px-3.5 sm:px-4 max-w-[290px]'
+            : 'w-10 h-10 sm:w-11 sm:h-11 justify-center p-0 max-w-[44px]'
         } ${
           isSoundActive
             ? 'bg-[#151520]/90 border-[#00D2BE]/50 text-[#00D2BE] shadow-[0_0_20px_rgba(0,210,190,0.25)] hover:border-[#00D2BE] hover:shadow-[0_0_25px_rgba(0,210,190,0.4)]'
-            : 'bg-[#151520]/90 border-[#E10600]/40 text-white hover:border-[#E10600]/80 shadow-[0_0_15px_rgba(225,6,0,0.2)]'
+            : 'bg-[#151520]/90 border-[#E10600]/40 text-white hover:border-[#E10600]/80 shadow-[0_0_15px_rgba(225,6,0,0.25)]'
         }`}
         title={isSoundActive ? 'Mute sound (Silent Mode)' : 'Play sound (Hans Zimmer F1 Theme)'}
-        aria-label={isSoundActive ? 'Mute sound (Silent Mode)' : 'Want some Music?'}
+        aria-label={isSoundActive ? 'Mute sound (Silent Mode)' : 'Want some Music? Best for full immersion'}
       >
         {isSoundActive ? (
           <>
@@ -96,14 +96,19 @@ export const AudioController: React.FC = () => {
               />
             </div>
 
-            {/* "Want some Music?" Prompt Text */}
-            <span
-              className={`font-telemetry text-xs sm:text-[13px] font-bold text-white tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
-                showText ? 'max-w-[180px] opacity-100 ml-2 mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
+            {/* "Want some Music?" & Immersion Suggestion */}
+            <div
+              className={`flex flex-col text-left justify-center overflow-hidden transition-all duration-500 ease-in-out ${
+                showText ? 'max-w-[210px] opacity-100 ml-2.5 mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
               }`}
             >
-              Want some Music?
-            </span>
+              <span className="font-telemetry text-xs sm:text-[12.5px] font-bold text-white tracking-wide whitespace-nowrap leading-none">
+                Want some Music?
+              </span>
+              <span className="font-telemetry text-[9.5px] sm:text-[10px] text-[#00D2BE] font-semibold tracking-wider uppercase whitespace-nowrap mt-1 leading-none">
+                Best for full immersion 🎧
+              </span>
+            </div>
 
             {/* Sound indicator */}
             <VolumeX
