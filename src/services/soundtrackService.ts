@@ -11,13 +11,14 @@ class SoundtrackService {
   private isPlayingState = false;
   private isMuffledState = true; // Starts in low-pass muffled mode on loading screen
   private listeners: Set<AudioListener> = new Set();
-  private hasUserInteracted = false;
   private isConnected = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.initAudio();
       this.setupGlobalUnlockListeners();
+      // Proactively attempt automatic sound playback on initial load
+      this.play().catch(() => {});
     }
   }
 
@@ -25,7 +26,7 @@ class SoundtrackService {
     try {
       this.audio = new Audio('/audio/hans-zimmer-f1.m4a');
       this.audio.loop = true;
-      this.audio.volume = 0.7;
+      this.audio.volume = 0.75;
       this.audio.preload = 'auto';
 
       this.audio.addEventListener('play', () => {
@@ -83,18 +84,16 @@ class SoundtrackService {
 
   private setupGlobalUnlockListeners() {
     const unlock = () => {
-      if (this.hasUserInteracted) return;
-      this.hasUserInteracted = true;
       this.resumeContext();
-      if (!this.isPlayingState && !this.isMutedState) {
-        this.play();
+      if (!this.isPlayingState) {
+        this.play().catch(() => {});
       }
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
     };
 
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('touchstart', unlock, { passive: true });
+    window.addEventListener('click', unlock, { passive: true });
+    window.addEventListener('keydown', unlock, { passive: true });
   }
 
   private async resumeContext() {
@@ -156,25 +155,14 @@ class SoundtrackService {
     }
   }
 
-  public pause() {
-    if (!this.audio) return;
-    this.audio.pause();
-    this.isPlayingState = false;
-    this.notify();
-  }
-
-  public toggle(): void {
-    if (!this.audio) return;
-    if (this.isPlayingState) {
-      this.pause();
-    } else {
-      this.play();
-    }
-  }
-
+  /**
+   * Toggles mute without stopping the audio playback.
+   * Music continues running in the background while muted.
+   */
   public toggleMute(): void {
     if (!this.audio) return;
     this.isMutedState = !this.isMutedState;
+
     if (this.gainNode && this.audioCtx) {
       this.gainNode.gain.setValueAtTime(
         this.isMutedState ? 0 : 1,
@@ -182,8 +170,10 @@ class SoundtrackService {
       );
     }
     this.audio.muted = this.isMutedState;
-    if (!this.isMutedState && !this.isPlayingState) {
-      this.play();
+
+    // Keep playing in background even when muted
+    if (!this.isPlayingState) {
+      this.play().catch(() => {});
     }
     this.notify();
   }
