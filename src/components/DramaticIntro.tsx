@@ -195,11 +195,6 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
 
       {/* Bottom Checkered Track Accent */}
       <div className="absolute bottom-0 left-0 right-0 h-1.5 kerb-inlay-h opacity-70" />
-
-      {/* Tap anywhere hint */}
-      <div className="absolute bottom-5 font-telemetry text-[10px] tracking-[0.25em] text-[#8E8E98] uppercase">
-        TAP ANYWHERE TO ENTER VIP PADDOCK
-      </div>
     </div>
   );
 };

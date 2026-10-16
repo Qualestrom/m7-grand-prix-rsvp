@@ -79,16 +79,6 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
           </p>
         </motion.div>
       </motion.div>
-
-      {/* Discreet Tap to Enter Cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0.3, 0.7, 0.3] }}
-        transition={{ delay: 1.2, duration: 2, repeat: Infinity }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 font-telemetry text-[11px] tracking-[0.2em] text-[#8E8E98] uppercase z-10 text-center whitespace-nowrap -mr-[0.2em]"
-      >
-        TAP ANYWHERE TO ENTER
-      </motion.div>
     </div>
   );
 };

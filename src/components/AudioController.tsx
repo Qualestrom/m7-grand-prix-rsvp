@@ -3,17 +3,15 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { soundtrackService } from '../services/soundtrackService';
 
 export const AudioController: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState<boolean>(soundtrackService.isPlaying);
   const [isMuted, setIsMuted] = useState<boolean>(soundtrackService.isMuted);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [isHovered, setIsHovered] = useState<boolean>(false);
 
   useEffect(() => {
     // Proactively start sound automatically on mount
-    soundtrackService.play();
+    soundtrackService.play().catch(() => {});
 
-    const unsubscribe = soundtrackService.subscribe((playing, muted) => {
-      setIsPlaying(playing);
+    const unsubscribe = soundtrackService.subscribe((_playing, muted) => {
       setIsMuted(muted);
     });
 
@@ -40,7 +38,8 @@ export const AudioController: React.FC = () => {
     }, 2200);
   };
 
-  const isSoundActive = isPlaying && !isMuted;
+  // Sound is enabled by default unless user explicitly chose Silent Mode
+  const isSoundActive = !isMuted;
   const showText = isExpanded || isHovered;
 
   return (

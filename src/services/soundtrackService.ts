@@ -17,7 +17,7 @@ class SoundtrackService {
     if (typeof window !== 'undefined') {
       this.initAudio();
       this.setupGlobalUnlockListeners();
-      // Proactively attempt automatic sound playback on initial load
+      // Proactively start playing sound as soon as website opens
       this.play().catch(() => {});
     }
   }
@@ -26,7 +26,7 @@ class SoundtrackService {
     try {
       this.audio = new Audio('/audio/hans-zimmer-f1.m4a');
       this.audio.loop = true;
-      this.audio.volume = 0.75;
+      this.audio.volume = 0.8;
       this.audio.preload = 'auto';
 
       this.audio.addEventListener('play', () => {
@@ -62,12 +62,12 @@ class SoundtrackService {
       // Low-pass Biquad Filter: cuts off trebles during the loading screen
       this.filterNode = this.audioCtx.createBiquadFilter();
       this.filterNode.type = 'lowpass';
-      // Low bass cutoff frequency (360 Hz) for deep, muffled rumble
+      // Low warm frequency (1300 Hz) so music is clearly audible without high trebles
       this.filterNode.frequency.setValueAtTime(
-        this.isMuffledState ? 360 : 20000,
+        this.isMuffledState ? 1300 : 20000,
         this.audioCtx.currentTime
       );
-      this.filterNode.Q.setValueAtTime(1.2, this.audioCtx.currentTime);
+      this.filterNode.Q.setValueAtTime(1.0, this.audioCtx.currentTime);
 
       this.gainNode = this.audioCtx.createGain();
       this.gainNode.gain.setValueAtTime(this.isMutedState ? 0 : 1, this.audioCtx.currentTime);
@@ -85,18 +85,28 @@ class SoundtrackService {
   private setupGlobalUnlockListeners() {
     const unlock = () => {
       this.resumeContext();
-      if (!this.isPlayingState) {
-        this.play().catch(() => {});
+      if (this.audio) {
+        this.audio.muted = this.isMutedState;
+        this.audio.play().catch(() => {});
       }
+      if (this.gainNode && this.audioCtx) {
+        this.gainNode.gain.setValueAtTime(
+          this.isMutedState ? 0 : 1,
+          this.audioCtx.currentTime
+        );
+      }
+      this.isPlayingState = true;
+      this.notify();
     };
 
     window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('touchstart', unlock, { passive: true });
     window.addEventListener('click', unlock, { passive: true });
     window.addEventListener('keydown', unlock, { passive: true });
+    window.addEventListener('wheel', unlock, { passive: true });
   }
 
-  private async resumeContext() {
+  public async resumeContext() {
     this.setupWebAudioNodes();
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       try {
@@ -118,7 +128,7 @@ class SoundtrackService {
 
     if (this.filterNode && this.audioCtx) {
       const now = this.audioCtx.currentTime;
-      const targetFreq = muffled ? 360 : 20000;
+      const targetFreq = muffled ? 1300 : 20000;
       this.filterNode.frequency.cancelScheduledValues(now);
       this.filterNode.frequency.setTargetAtTime(targetFreq, now, rampSeconds / 3);
     }
@@ -149,7 +159,14 @@ class SoundtrackService {
       this.notify();
       return true;
     } catch {
-      this.isPlayingState = false;
+      // In case browser policy enforces initial muted playback before user gesture
+      try {
+        this.audio.muted = true;
+        await this.audio.play();
+        this.isPlayingState = true;
+      } catch {
+        this.isPlayingState = false;
+      }
       this.notify();
       return false;
     }
