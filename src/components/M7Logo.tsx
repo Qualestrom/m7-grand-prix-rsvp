@@ -15,43 +15,53 @@ export const M7Logo: React.FC<M7LogoProps> = ({
   className = '',
 }) => {
   const dimensions = {
-    sm: { width: 140, height: 60, scale: 0.6 },
-    md: { width: 220, height: 90, scale: 0.85 },
-    lg: { width: 320, height: 130, scale: 1.2 },
-    xl: { width: 420, height: 170, scale: 1.6 },
+    sm: { width: 150, height: 60, scale: 0.65 },
+    md: { width: 230, height: 90, scale: 0.9 },
+    lg: { width: 330, height: 130, scale: 1.25 },
+    xl: { width: 440, height: 170, scale: 1.65 },
   }[size];
 
-  const drawTransition = {
-    duration: 1.6,
+  // Motion transitions
+  const strokeTransition = {
+    duration: 1.4,
     ease: [0.16, 1, 0.3, 1] as const,
   };
 
   return (
     <div className={`inline-flex flex-col items-center select-none ${className}`}>
-      <div className="relative filter drop-shadow-[0_0_24px_rgba(225,6,0,0.45)]">
+      <div className="relative filter drop-shadow-[0_4px_28px_rgba(225,6,0,0.5)]">
         <svg
           width={dimensions.width}
           height={dimensions.height}
-          viewBox="0 0 320 120"
+          viewBox="0 0 340 120"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >
           <defs>
-            <linearGradient id="f1RedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            {/* Authentic Formula 1 Red Gradient */}
+            <linearGradient id="f1GantryRed" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#FF1801" />
-              <stop offset="100%" stopColor="#B30000" />
+              <stop offset="60%" stopColor="#E10600" />
+              <stop offset="100%" stopColor="#9E0000" />
             </linearGradient>
-            <linearGradient id="whiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="100%" stopColor="#D4D4D8" />
+
+            {/* Specular Chrome Highlight */}
+            <linearGradient id="chromeHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+              <stop offset="50%" stopColor="#D0D0DA" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.9" />
             </linearGradient>
-            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FFD700" />
-              <stop offset="100%" stopColor="#FF9900" />
+
+            {/* Cyan Racing Telemetry Gradient */}
+            <linearGradient id="telemetryLine" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#00D2BE" />
+              <stop offset="100%" stopColor="#FFFFFF" />
             </linearGradient>
-            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+
+            {/* Neon Bloom Filter */}
+            <filter id="f1Glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -59,128 +69,146 @@ export const M7Logo: React.FC<M7LogoProps> = ({
             </filter>
           </defs>
 
-          {/* Aerodynamic Speed Lines behind the logo */}
-          <g opacity="0.6">
+          {/* Background Ambient Aerodynamic Speed Trails */}
+          <g opacity="0.35">
             <motion.line
-              x1="10"
-              y1="28"
-              x2="100"
-              y2="28"
+              x1="20"
+              y1="34"
+              x2="110"
+              y2="34"
               stroke="#00D2BE"
-              strokeWidth="2.5"
+              strokeWidth="2"
               strokeDasharray="16 8"
               initial={animated ? { x: -30, opacity: 0 } : false}
-              animate={animated ? { x: [0, 40, 0], opacity: [0.3, 0.9, 0.3] } : false}
+              animate={animated ? { x: [0, 30, 0], opacity: [0.2, 0.6, 0.2] } : false}
               transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
             />
             <motion.line
-              x1="5"
-              y1="48"
-              x2="70"
-              y2="48"
+              x1="10"
+              y1="64"
+              x2="80"
+              y2="64"
               stroke="#E10600"
               strokeWidth="2"
               strokeDasharray="20 10"
               initial={animated ? { x: -20, opacity: 0 } : false}
-              animate={animated ? { x: [0, 30, 0], opacity: [0.2, 0.7, 0.2] } : false}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "linear", delay: 0.3 }}
-            />
-            <motion.line
-              x1="15"
-              y1="68"
-              x2="60"
-              y2="68"
-              stroke="#FFB800"
-              strokeWidth="2"
-              strokeDasharray="12 6"
-              initial={animated ? { x: -15, opacity: 0 } : false}
-              animate={animated ? { x: [0, 25, 0], opacity: [0.2, 0.8, 0.2] } : false}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.5 }}
+              animate={animated ? { x: [0, 25, 0], opacity: [0.2, 0.7, 0.2] } : false}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "linear", delay: 0.2 }}
             />
           </g>
 
-          {/* "M" - Sweeping Left Aerodynamic Ribbon (F1 Red) */}
-          <motion.path
-            d="M 50 102 L 86 18 H 122 L 96 102 H 68 L 94 40 H 76 L 50 102 Z"
-            fill="url(#f1RedGrad)"
-            stroke="#FFFFFF"
-            strokeWidth={animated ? "1.5" : "0"}
-            initial={animated ? { pathLength: 0, opacity: 0 } : false}
-            animate={animated ? { pathLength: 1, opacity: 1 } : false}
-            transition={drawTransition}
-            filter="url(#neonGlow)"
-          />
+          {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC 20-DEGREE FORWARD RAKE */}
+          <g transform="skewX(-20)" transform-origin="170 60">
+            {/* ======================================================== */}
+            {/* THE "M": DUAL RACETRACK APEX RIBBONS */}
+            {/* ======================================================== */}
 
-          {/* "M" - Inner Interlocking Diagonal Ribbon (Pure White / Kerb Strip) */}
-          <motion.path
-            d="M 106 102 L 132 40 H 150 L 124 102 H 106 Z M 138 18 H 174 L 148 102 H 128 L 152 40 H 144 L 138 18 Z"
-            fill="url(#whiteGrad)"
-            stroke="#00D2BE"
-            strokeWidth={animated ? "1" : "0"}
-            initial={animated ? { pathLength: 0, opacity: 0 } : false}
-            animate={animated ? { pathLength: 1, opacity: 1 } : false}
-            transition={{ ...drawTransition, delay: 0.2 }}
-          />
+            {/* 1. M - Heavy Primary Red Ribbon (Tubular Racetrack) */}
+            <motion.path
+              d="M 52,100 L 52,36 C 52,18 80,18 82,36 L 96,72 C 100,82 108,82 112,72 L 126,36 C 128,18 156,18 156,36 L 156,100"
+              stroke="url(#f1GantryRed)"
+              strokeWidth="22"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              filter="url(#f1Glow)"
+              initial={animated ? { pathLength: 0, opacity: 0 } : false}
+              animate={animated ? { pathLength: 1, opacity: 1 } : false}
+              transition={strokeTransition}
+            />
 
-          {/* "7" - Detached Racing Speed Mark tucked into the slipstream (F1 Red & Gold) */}
-          <g>
-            {/* Top Bar of the 7 */}
+            {/* 2. M - Inner Negative-Space Racing Groove (White & Cyan) */}
             <motion.path
-              d="M 186 18 H 268 L 254 44 H 206 L 202 54 H 236 L 226 72 H 202 L 186 18 Z"
-              fill="url(#f1RedGrad)"
-              initial={animated ? { x: 30, opacity: 0 } : false}
-              animate={animated ? { x: 0, opacity: 1 } : false}
-              transition={{ ...drawTransition, delay: 0.35 }}
-              filter="url(#neonGlow)"
+              d="M 52,100 L 52,36 C 52,18 80,18 82,36 L 96,72 C 100,82 108,82 112,72 L 126,36 C 128,18 156,18 156,36 L 156,100"
+              stroke="url(#chromeHighlight)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              opacity="0.9"
+              initial={animated ? { pathLength: 0, opacity: 0 } : false}
+              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
+              transition={{ ...strokeTransition, delay: 0.2 }}
             />
-            {/* Sweeping Diagonal Stem of the 7 */}
+
+            {/* ======================================================== */}
+            {/* THE "7": SIGNATURE F1 HORIZONTAL BAR & DIAGONAL SLASH */}
+            {/* ======================================================== */}
+
+            {/* 1. 7 - Heavy Primary Red Ribbon */}
             <motion.path
-              d="M 268 18 L 226 102 H 194 L 238 32 H 258 L 268 18 Z"
-              fill="url(#whiteGrad)"
-              initial={animated ? { y: -20, opacity: 0 } : false}
-              animate={animated ? { y: 0, opacity: 1 } : false}
-              transition={{ ...drawTransition, delay: 0.45 }}
+              d="M 188,27 L 246,27 C 260,27 266,35 258,49 L 214,100"
+              stroke="url(#f1GantryRed)"
+              strokeWidth="22"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              filter="url(#f1Glow)"
+              initial={animated ? { pathLength: 0, opacity: 0 } : false}
+              animate={animated ? { pathLength: 1, opacity: 1 } : false}
+              transition={{ ...strokeTransition, delay: 0.3 }}
             />
-            {/* High-speed Slipstream Chevron */}
+
+            {/* 2. 7 - Inner Chrome Racing Groove */}
+            <motion.path
+              d="M 188,27 L 246,27 C 260,27 266,35 258,49 L 214,100"
+              stroke="url(#chromeHighlight)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              opacity="0.9"
+              initial={animated ? { pathLength: 0, opacity: 0 } : false}
+              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
+              transition={{ ...strokeTransition, delay: 0.45 }}
+            />
+
+            {/* 3. High-Speed DRS Slipstream Chevron Mark */}
             <motion.polygon
-              points="278,22 292,18 284,38 270,42"
-              fill="url(#goldGrad)"
+              points="272,28 284,24 278,38 266,42"
+              fill="#FFB800"
               initial={animated ? { scale: 0, opacity: 0 } : false}
               animate={animated ? { scale: 1, opacity: 1 } : false}
               transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
             />
-          </g>
 
-          {/* DRS / Telemetry Cyan Racing Dot Indicator */}
-          <motion.circle
-            cx="278"
-            cy="18"
-            r="4.5"
-            fill="#00D2BE"
-            initial={animated ? { scale: 0 } : false}
-            animate={animated ? { scale: [1, 1.4, 1] } : false}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          />
+            {/* 4. DRS Telemetry Active Dot */}
+            <motion.circle
+              cx="264"
+              cy="27"
+              r="3.5"
+              fill="#00D2BE"
+              initial={animated ? { scale: 0 } : false}
+              animate={animated ? { scale: [1, 1.4, 1] } : false}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            />
+          </g>
         </svg>
       </div>
 
+      {/* OFFICIAL FORMULA 1 BROADCAST TYPOGRAPHY BADGE */}
       {showSubtitle && (
         <motion.div
-          initial={animated ? { opacity: 0, y: 10 } : false}
+          initial={animated ? { opacity: 0, y: 8 } : false}
           animate={animated ? { opacity: 1, y: 0 } : false}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="mt-2 text-center"
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="mt-3 text-center"
         >
           <div className="flex items-center justify-center gap-2">
-            <span className="h-[2px] w-6 bg-[#E10600]"></span>
-            <span className="font-f1-head font-black tracking-[0.25em] text-xs sm:text-sm text-white uppercase">
+            <span className="h-[2px] w-6 bg-gradient-to-r from-transparent to-[#E10600]"></span>
+            <span className="font-f1-head font-black tracking-[0.28em] text-xs sm:text-sm text-white uppercase italic">
               MATTHEU AMARI
             </span>
-            <span className="h-[2px] w-6 bg-[#00D2BE]"></span>
+            <span className="h-[2px] w-6 bg-gradient-to-l from-transparent to-[#00D2BE]"></span>
           </div>
-          <p className="font-telemetry text-[10px] tracking-[0.3em] text-[#8E8E93] mt-0.5 uppercase">
-            ROUND 07 • 7TH BIRTHDAY GRAND PRIX
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <span className="px-1.5 py-0.2 bg-[#E10600] text-white text-[9px] font-f1-head font-black italic rounded">
+              GP 07
+            </span>
+            <p className="font-telemetry text-[10px] tracking-[0.25em] text-[#8E8E93] uppercase font-bold">
+              7TH BIRTHDAY WORLD CHAMPIONSHIP
+            </p>
+          </div>
         </motion.div>
       )}
     </div>

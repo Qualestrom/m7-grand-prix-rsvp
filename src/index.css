@@ -3,81 +3,131 @@
 @layer base {
   :root {
     --f1-red: #E10600;
-    --f1-carbon: #15151E;
-    --f1-asphalt: #1F1F27;
-    --f1-panel: #262631;
+    --f1-red-bright: #FF1801;
+    --f1-red-deep: #9E0000;
+    --f1-carbon: #12121A;
+    --f1-asphalt: #181822;
+    --f1-panel: #1F1F2C;
     --f1-telemetry: #00D2BE;
     --f1-drs: #FFB800;
     --f1-kerb-white: #FFFFFF;
-    --f1-gray: #8E8E93;
-    --f1-border: #383842;
+    --f1-gray: #8E8E98;
+    --f1-border: rgba(255, 255, 255, 0.08);
   }
 
   body {
-    background-color: var(--f1-carbon);
+    background-color: #0E0E14;
     color: #FFFFFF;
     font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 }
 
-/* Carbon Fiber Texture Background */
-.bg-carbon-pattern {
-  background-color: #15151E;
+/* ==============================================================================
+   HIGH-END LUXURY F1 ATMOSPHERE (Deep Carbon & Vignette)
+   ============================================================================== */
+.bg-f1-ambient {
+  background-color: #0E0E14;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(225, 6, 0, 0.15), transparent 45%),
-    linear-gradient(45deg, #111118 25%, transparent 25%), 
-    linear-gradient(-45deg, #111118 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #111118 75%), 
-    linear-gradient(-45deg, transparent 75%, #111118 75%);
-  background-size: 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
-  background-position: 0 0, 0 0, 0 4px, 4px -4px, -4px 0px;
+    radial-gradient(100% 70% at 50% -10%, rgba(225, 6, 0, 0.20) 0%, transparent 60%),
+    radial-gradient(80% 50% at 50% 110%, rgba(0, 210, 190, 0.08) 0%, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
 }
 
-/* F1 Red & White Alternating Kerb Strips */
-.kerb-strip-h {
+/* Double-Bezel Hardware Architecture */
+.double-bezel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1.75rem;
+  padding: 0.375rem;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.double-bezel-inner {
+  background: linear-gradient(180deg, #1A1A24 0%, #13131C 100%);
+  border-radius: calc(1.75rem - 0.375rem);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.16), 0 10px 25px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Alternating F1 Racing Kerb Inlay */
+.kerb-inlay-h {
   background: repeating-linear-gradient(
     90deg,
-    #E10600,
-    #E10600 12px,
-    #FFFFFF 12px,
-    #FFFFFF 24px
+    #E10600 0px,
+    #E10600 14px,
+    #FFFFFF 14px,
+    #FFFFFF 28px
   );
   height: 4px;
   width: 100%;
 }
 
-.kerb-strip-v {
-  background: repeating-linear-gradient(
-    180deg,
-    #E10600,
-    #E10600 12px,
-    #FFFFFF 12px,
-    #FFFFFF 24px
+/* Holographic Foil Shimmer */
+.holo-foil {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(0, 210, 190, 0.25) 25%,
+    rgba(225, 6, 0, 0.2) 50%,
+    rgba(255, 184, 0, 0.25) 75%,
+    rgba(255, 255, 255, 0.05) 100%
   );
-  width: 4px;
+  background-size: 200% 200%;
+  animation: holoShift 6s ease infinite;
 }
 
-/* Official F1 Chamfered Angle Shapes */
-.f1-chamfer {
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+@keyframes holoShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-.f1-chamfer-tl-br {
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+/* Button-in-Button Luxury CTA */
+.btn-f1-primary {
+  background: linear-gradient(180deg, #FF1E1E 0%, #E10600 50%, #B00000 100%);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 8px 24px -4px rgba(225, 6, 0, 0.55),
+    0 0 40px -10px rgba(225, 6, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.f1-skew-btn {
-  transform: skewX(-14deg);
+.btn-f1-primary:hover {
+  background: linear-gradient(180deg, #FF3333 0%, #F50802 50%, #C40000 100%);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 12px 32px -4px rgba(225, 6, 0, 0.75),
+    0 0 50px -5px rgba(225, 6, 0, 0.45);
+  transform: translateY(-1px);
 }
 
-.f1-skew-btn > * {
-  transform: skewX(14deg);
+.btn-f1-primary:active {
+  transform: translateY(1px) scale(0.99);
 }
 
-/* Telemetry Font Utility */
+/* Secondary Stealth Button */
+.btn-f1-secondary {
+  background: linear-gradient(180deg, #242432 0%, #1A1A24 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-f1-secondary:hover {
+  background: linear-gradient(180deg, #2D2D3E 0%, #222230 100%);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+
+/* Telemetry & Display Fonts */
 .font-telemetry {
   font-family: 'JetBrains Mono', monospace;
   font-feature-settings: "tnum" 1, "zero" 1;
@@ -85,58 +135,41 @@
 
 .font-f1-head {
   font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .font-f1-display {
   font-family: 'Titillium Web', sans-serif;
 }
 
-/* Glow Highlights */
-.glow-cyan {
-  box-shadow: 0 0 20px rgba(0, 210, 190, 0.45);
+/* Starting Gantry Fresnel Lens Flare */
+.gantry-pod-lit {
+  background: radial-gradient(circle at 45% 45%, #FFFFFF 0%, #FF5A5A 30%, #E10600 70%, #8A0000 100%);
+  box-shadow: 
+    0 0 20px #FF1E1E,
+    0 0 45px #E10600,
+    0 0 70px rgba(225, 6, 0, 0.8),
+    inset 0 0 15px rgba(255, 255, 255, 0.9);
 }
 
-.glow-red {
-  box-shadow: 0 0 20px rgba(225, 6, 0, 0.55);
+.gantry-pod-off {
+  background: radial-gradient(circle at 45% 45%, #2A1A1A 0%, #170E0E 70%, #0A0505 100%);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.glow-gold {
-  box-shadow: 0 0 20px rgba(255, 184, 0, 0.5);
-}
-
-/* Timing Tower Lines */
-.timing-line {
-  border-left: 3px solid #E10600;
-}
-
-.timing-line-purple {
-  border-left: 3px solid #A855F7;
-}
-
-.timing-line-cyan {
-  border-left: 3px solid #00D2BE;
-}
-
-.timing-line-yellow {
-  border-left: 3px solid #FFB800;
-}
-
-/* Custom Scrollbar for sleek F1 look */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #15151E;
+  background: #0E0E14;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #2E2E38;
+  background: #2E2E3E;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #E10600;
 }
