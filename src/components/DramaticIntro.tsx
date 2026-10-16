@@ -14,7 +14,8 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
   const [stage, setStage] = useState<IntroStage>('name');
 
   useEffect(() => {
-    // Attempt soundtrack playback
+    // Open trebles with an explosive sweep as the introduction starts!
+    soundtrackService.openTreble(0.35);
     soundtrackService.play();
 
     // Stage 1: Mattheu Amari (0.0s - 1.1s)
@@ -47,6 +48,7 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
 
   const handleSkip = (e: React.MouseEvent) => {
     e.stopPropagation();
+    soundtrackService.openTreble(0.1);
     soundtrackService.play();
     onComplete();
   };

@@ -14,11 +14,15 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
     onComplete();
   };
 
-  // Smoothly transition into the dramatic intro after 2.6 seconds
+  // Smoothly transition into the dramatic intro after 2.8 seconds
   useEffect(() => {
+    // Start sound in low bass mode (muffled exterior garage ambience)
+    soundtrackService.closeToBass(0.1);
+    soundtrackService.play();
+
     const timer = setTimeout(() => {
       handleProceed();
-    }, 2600);
+    }, 2800);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
