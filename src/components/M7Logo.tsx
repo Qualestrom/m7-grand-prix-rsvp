@@ -19,8 +19,8 @@ export const M7Logo: React.FC<M7LogoProps> = ({
   const dimensions = {
     sm: { width: 140, height: 60, scale: 0.65 },
     md: { width: 220, height: 95, scale: 0.9 },
-    lg: { width: 320, height: 135, scale: 1.25 },
-    xl: { width: 440, height: 180, scale: 1.65 },
+    lg: { width: 330, height: 140, scale: 1.25 },
+    xl: { width: 450, height: 185, scale: 1.65 },
   }[size];
 
   const strokeTransition = {
@@ -32,7 +32,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
 
   return (
     <div className={`inline-flex flex-col items-center select-none ${className}`}>
-      <div className="relative filter drop-shadow-[0_4px_30px_rgba(255,24,1,0.5)]">
+      <div className="relative filter drop-shadow-[0_4px_32px_rgba(255,24,1,0.55)]">
         <svg
           width={dimensions.width}
           height={dimensions.height}
@@ -56,7 +56,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
               <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.85" />
             </linearGradient>
 
-            {/* Flat Horizontal Baseline Clip: Ensures razor-flat bottom edge on M and 7 */}
+            {/* Flat Horizontal Baseline Clip: Ensures razor-flat bottom edge */}
             <clipPath id="m7BaselineClip">
               <rect x="0" y="0" width="450" height="114" />
             </clipPath>
@@ -74,14 +74,14 @@ export const M7Logo: React.FC<M7LogoProps> = ({
           {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC 26-DEGREE FORWARD RAKE */}
           <g transform="skewX(-26)" style={{ transformOrigin: '160px 65px' }} clipPath="url(#m7BaselineClip)">
             {/* ======================================================== */}
-            {/* THE "M": FORMULA 1 RACETRACK APEX DUAL-RIBBON            */}
+            {/* THE "M": FORMULA 1 RACETRACK APEX DUAL-RIBBON (36px WIDE) */}
             {/* ======================================================== */}
 
-            {/* 1. M - Wide Primary Red Track (34px) */}
+            {/* 1. M - Wide Heavy Red Track */}
             <motion.path
-              d="M 44,130 L 44,38 C 44,24 58,20 72,28 L 108,74 L 144,28 C 158,20 172,24 172,38 L 172,130"
+              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
               stroke="url(#f1GantryRed)"
-              strokeWidth="34"
+              strokeWidth="36"
               strokeLinecap="butt"
               strokeLinejoin="round"
               fill="none"
@@ -91,9 +91,9 @@ export const M7Logo: React.FC<M7LogoProps> = ({
               transition={strokeTransition}
             />
 
-            {/* 2. M - Inner Negative-Space Racing Groove (Iconic F1 Slit) */}
+            {/* 2. M - Inner Negative-Space Racing Groove */}
             <motion.path
-              d="M 44,130 L 44,38 C 44,24 58,20 72,28 L 108,74 L 144,28 C 158,20 172,24 172,38 L 172,130"
+              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
               stroke={slitStrokeColor}
               strokeWidth="5.5"
               strokeLinecap="butt"
@@ -106,7 +106,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
 
             {/* 3. M - Chrome Specular Racing Highlight */}
             <motion.path
-              d="M 44,130 L 44,38 C 44,24 58,20 72,28 L 108,74 L 144,28 C 158,20 172,24 172,38 L 172,130"
+              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
               stroke="url(#chromeHighlight)"
               strokeWidth="1.8"
               strokeLinecap="butt"
@@ -119,14 +119,14 @@ export const M7Logo: React.FC<M7LogoProps> = ({
             />
 
             {/* ======================================================== */}
-            {/* THE "7": SIGNATURE F1 HORIZONTAL ROOF & PARALLEL LEG     */}
+            {/* THE "7": NATURAL MOTORSPORT ROOF & RAKED LEG (36px WIDE) */}
             {/* ======================================================== */}
 
-            {/* 1. 7 - Wide Primary Red Track (34px, No Crossbar) */}
+            {/* 1. 7 - Wide Heavy Red Track (No Crossbar) */}
             <motion.path
-              d="M 197,28 L 254,28 C 266,28 270,36 262,48 L 207,130"
+              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
               stroke="url(#f1GantryRed)"
-              strokeWidth="34"
+              strokeWidth="36"
               strokeLinecap="butt"
               strokeLinejoin="round"
               fill="none"
@@ -138,7 +138,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
 
             {/* 2. 7 - Inner Negative-Space Racing Groove */}
             <motion.path
-              d="M 197,28 L 254,28 C 266,28 270,36 262,48 L 207,130"
+              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
               stroke={slitStrokeColor}
               strokeWidth="5.5"
               strokeLinecap="butt"
@@ -151,7 +151,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
 
             {/* 3. 7 - Chrome Specular Racing Highlight */}
             <motion.path
-              d="M 197,28 L 254,28 C 266,28 270,36 262,48 L 207,130"
+              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
               stroke="url(#chromeHighlight)"
               strokeWidth="1.8"
               strokeLinecap="butt"
