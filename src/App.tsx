@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TelemetryLoader } from './components/TelemetryLoader';
 import { PaddockPass } from './components/PaddockPass';
 import { DriverRegistration } from './components/DriverRegistration';
+import { DeclineMessage } from './components/DeclineMessage';
 import { CircuitGuide3D } from './components/circuit3d/CircuitGuide3D';
 import { PitWallAdmin } from './components/PitWallAdmin';
-import { ShieldAlert } from 'lucide-react';
 
 type ScreenState = 'loader' | 'briefing' | 'registration-attending' | 'registration-dnf' | 'circuit-guide' | 'admin';
 
@@ -40,6 +40,46 @@ function App() {
     window.history.pushState(null, '', '/');
     setCurrentScreen('briefing');
   };
+
+  // Konami Code listener to unlock Pit Wall Admin
+  // Sequence: Up, Up, Down, Down, Left, Right, Left, Right, B, A, Enter
+  useEffect(() => {
+    let konamiIndex = 0;
+    const KONAMI_SEQUENCE = [
+      'arrowup',
+      'arrowup',
+      'arrowdown',
+      'arrowdown',
+      'arrowleft',
+      'arrowright',
+      'arrowleft',
+      'arrowright',
+      'b',
+      'a',
+      'enter',
+    ];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (key === KONAMI_SEQUENCE[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === KONAMI_SEQUENCE.length) {
+          konamiIndex = 0;
+          navigateToAdmin();
+        }
+      } else {
+        konamiIndex = key === KONAMI_SEQUENCE[0] ? 1 : 0;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="min-h-screen bg-carbon-pattern text-white selection:bg-[#E10600] selection:text-white relative overflow-x-hidden">
@@ -96,11 +136,7 @@ function App() {
             exit={{ opacity: 0, y: -14 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <DriverRegistration
-              initialAttending={false}
-              onSuccess={() => setCurrentScreen('briefing')}
-              onBack={() => setCurrentScreen('briefing')}
-            />
+            <DeclineMessage onBack={() => setCurrentScreen('briefing')} />
           </motion.div>
         )}
 
@@ -128,20 +164,6 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Subtle Floating Admin Access Trigger (visible outside of loader and admin screen) */}
-      {currentScreen !== 'loader' && currentScreen !== 'admin' && (
-        <div className="fixed bottom-3 right-3 z-50">
-          <button
-            onClick={navigateToAdmin}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#171720]/80 hover:bg-[#1F1F2C] border border-[#303042] rounded-full text-[10px] font-telemetry text-[#8E8E93] hover:text-[#00D2BE] shadow-lg backdrop-blur-sm transition-all cursor-pointer"
-            title="Pit Wall Admin Portal (/admin)"
-          >
-            <ShieldAlert size={12} className="text-[#00D2BE]" />
-            <span>PIT WALL ADMIN</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

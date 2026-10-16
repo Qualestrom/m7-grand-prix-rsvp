@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { EVENT_CONFIG } from '../config/eventConfig';
 import { M7Logo } from './M7Logo';
@@ -13,6 +13,16 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
   onConfirmGridSlot,
   onBoxDnf,
 }) => {
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const handleAttendClick = () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
+    setTimeout(() => {
+      setIsConfirming(false);
+      onConfirmGridSlot();
+    }, 1300);
+  };
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-[#09090D] px-4 py-8 relative overflow-hidden">
       {/* Subtle Luxury Radial Vignette Glow */}
@@ -73,26 +83,39 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
             </div>
           </div>
 
-          {/* Primary CTA: Confirm Grid Slot */}
+          {/* Primary CTA: I Will Attend */}
           <button
-            onClick={onConfirmGridSlot}
-            className="group w-full py-4 px-6 btn-f1-primary rounded-full cursor-pointer flex items-center justify-center gap-3 border border-white/25 shadow-xl transition-all"
+            onClick={handleAttendClick}
+            disabled={isConfirming}
+            className="group w-full py-4 px-6 btn-f1-primary rounded-full cursor-pointer flex items-center justify-center gap-3 border border-white/25 shadow-xl transition-all disabled:opacity-90"
           >
-            <span className="font-f1-head font-black tracking-widest text-sm sm:text-base text-white uppercase">
-              CONFIRM GRID SLOT
-            </span>
-            <span className="w-8 h-8 rounded-full bg-black/30 border border-white/20 flex items-center justify-center group-hover:translate-x-1 transition-transform">
-              <ArrowRight size={16} className="text-white" />
-            </span>
+            {isConfirming ? (
+              <div className="flex items-center justify-center gap-3">
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="font-f1-head font-black tracking-widest text-sm sm:text-base text-white uppercase animate-pulse">
+                  CONFIRMING GRID SLOT...
+                </span>
+              </div>
+            ) : (
+              <>
+                <span className="font-f1-head font-black tracking-widest text-sm sm:text-base text-white uppercase">
+                  I WILL ATTEND
+                </span>
+                <span className="w-8 h-8 rounded-full bg-black/30 border border-white/20 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                  <ArrowRight size={16} className="text-white" />
+                </span>
+              </>
+            )}
           </button>
 
           {/* Subtle DNF / Can't make it link */}
           {onBoxDnf && (
             <button
               onClick={onBoxDnf}
+              disabled={isConfirming}
               className="mt-4 text-xs font-telemetry text-[#8E8E98] hover:text-white transition-colors cursor-pointer"
             >
-              Can't make it? Let us know
+              Can't make it? Leave a message
             </button>
           )}
         </div>
