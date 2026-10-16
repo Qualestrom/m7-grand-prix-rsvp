@@ -98,7 +98,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
           </g>
 
           {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC 20-DEGREE FORWARD RAKE */}
-          <g transform="skewX(-20)" transform-origin="170 60">
+          <g transform="skewX(-20)" style={{ transformOrigin: '170px 60px' }}>
             {/* ======================================================== */}
             {/* THE "M": DUAL RACETRACK APEX RIBBONS */}
             {/* ======================================================== */}
