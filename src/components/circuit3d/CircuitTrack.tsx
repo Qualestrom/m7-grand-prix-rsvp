@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { Html } from '@react-three/drei';
 import { EVENT_CONFIG } from '../../config/eventConfig';
-import { MapPin, Flag, Trophy } from 'lucide-react';
 
 export const TRACK_POINTS = [
   new THREE.Vector3(0, 0, 0),         // Start / Grid
@@ -18,6 +16,47 @@ export const TRACK_POINTS = [
   new THREE.Vector3(-25, 0, -5),      // Final Corner
   new THREE.Vector3(0, 0, 0),         // Finish Line Arch / Venue
 ];
+
+// Helper to create pure WebGL 3D billboard sign textures (zero React 19 DOM portal unmount conflicts)
+function createBillboardTexture(title: string, subtitle: string, accentColor: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 180;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background panel
+  ctx.fillStyle = '#161622';
+  if (ctx.roundRect) {
+    ctx.roundRect(6, 6, 500, 168, 16);
+  } else {
+    ctx.rect(6, 6, 500, 168);
+  }
+  ctx.fill();
+
+  // Accent border
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = accentColor;
+  ctx.stroke();
+
+  // Top header text
+  ctx.fillStyle = accentColor;
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText(title.toUpperCase(), 24, 46);
+
+  // Subtitle / Landmark text
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText(subtitle.toUpperCase().slice(0, 26), 24, 98);
+
+  // Bottom brand strip
+  ctx.fillStyle = '#8E8E93';
+  ctx.font = '16px monospace';
+  ctx.fillText('M7 GRAND PRIX • OFFICIAL VENUE CIRCUIT', 24, 142);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
 
 interface CircuitTrackProps {
   curve: THREE.CatmullRomCurve3;
@@ -103,6 +142,11 @@ export const CircuitTrack: React.FC<CircuitTrackProps> = ({ curve }) => {
   const pS2 = useMemo(() => curve.getPointAt(0.58), [curve]);
   const pFinish = useMemo(() => curve.getPointAt(0.98), [curve]);
 
+  // Pure WebGL Billboard Textures
+  const s1Texture = useMemo(() => createBillboardTexture('SECTOR 1 LANDMARK', EVENT_CONFIG.sectors[0].name, '#00D2BE'), []);
+  const s2Texture = useMemo(() => createBillboardTexture('SECTOR 2 LANDMARK', EVENT_CONFIG.sectors[1].name, '#FFB800'), []);
+  const finishTexture = useMemo(() => createBillboardTexture('FINISH PODIUM // VENUE', EVENT_CONFIG.venueName, '#E10600'), []);
+
   return (
     <group>
       {/* Asphalt Surface */}
@@ -161,49 +205,42 @@ export const CircuitTrack: React.FC<CircuitTrackProps> = ({ curve }) => {
           <meshStandardMaterial color="#FFFFFF" emissive="#333333" />
         </mesh>
 
-        {/* Celebratory Podium Podium Marker */}
+        {/* Celebratory Podium Marker */}
         <mesh position={[0, 0.5, 4]}>
           <cylinderGeometry args={[2.5, 2.8, 1, 16]} />
           <meshStandardMaterial color="#FFB800" metalness={0.8} roughness={0.2} />
         </mesh>
 
-        {/* Floating 3D HTML Venue Pin Banner */}
-        <Html position={[0, 7.8, 0]} center distanceFactor={28}>
-          <div className="bg-[#1C1C24]/95 border-2 border-[#E10600] text-white px-3 py-1.5 rounded-lg shadow-[0_0_25px_rgba(225,6,0,0.8)] backdrop-blur-md flex items-center gap-2 whitespace-nowrap select-none pointer-events-none">
-            <Trophy size={16} className="text-[#FFB800] animate-bounce" />
-            <div>
-              <span className="text-[10px] font-telemetry text-[#00D2BE] block font-bold">
-                FINISH LINE & PODIUM
-              </span>
-              <span className="font-f1-head text-xs font-black uppercase text-white">
-                {EVENT_CONFIG.venueName}
-              </span>
-            </div>
-          </div>
-        </Html>
+        {/* 3D Native WebGL Finish Line Billboard Sign */}
+        <mesh position={[0, 8.2, 0]}>
+          <planeGeometry args={[7.5, 2.6]} />
+          <meshBasicMaterial map={finishTexture} transparent side={THREE.DoubleSide} />
+        </mesh>
       </group>
 
-      {/* Floating 3D HTML Sector 1 Callout */}
-      <Html position={[pS1.x, pS1.y + 4.5, pS1.z]} center distanceFactor={30}>
-        <div className="bg-[#1C1C24]/90 border border-[#00D2BE] text-white px-3 py-1 rounded-md shadow-lg backdrop-blur-sm flex items-center gap-2 whitespace-nowrap select-none pointer-events-none">
-          <Flag size={14} className="text-[#00D2BE]" />
-          <div>
-            <span className="text-[9px] font-telemetry text-[#00D2BE] block font-bold">SECTOR 1</span>
-            <span className="font-f1-head text-[11px] font-bold uppercase">{EVENT_CONFIG.sectors[0].name}</span>
-          </div>
-        </div>
-      </Html>
+      {/* 3D Native WebGL Sector 1 Billboard Sign */}
+      <group position={[pS1.x, pS1.y + 4.5, pS1.z]}>
+        <mesh>
+          <planeGeometry args={[6.5, 2.3]} />
+          <meshBasicMaterial map={s1Texture} transparent side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, -2.4, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 2.6]} />
+          <meshStandardMaterial color="#333345" />
+        </mesh>
+      </group>
 
-      {/* Floating 3D HTML Sector 2 Callout */}
-      <Html position={[pS2.x, pS2.y + 4.5, pS2.z]} center distanceFactor={30}>
-        <div className="bg-[#1C1C24]/90 border border-[#FFB800] text-white px-3 py-1 rounded-md shadow-lg backdrop-blur-sm flex items-center gap-2 whitespace-nowrap select-none pointer-events-none">
-          <MapPin size={14} className="text-[#FFB800]" />
-          <div>
-            <span className="text-[9px] font-telemetry text-[#FFB800] block font-bold">SECTOR 2</span>
-            <span className="font-f1-head text-[11px] font-bold uppercase">{EVENT_CONFIG.sectors[1].name}</span>
-          </div>
-        </div>
-      </Html>
+      {/* 3D Native WebGL Sector 2 Billboard Sign */}
+      <group position={[pS2.x, pS2.y + 4.5, pS2.z]}>
+        <mesh>
+          <planeGeometry args={[6.5, 2.3]} />
+          <meshBasicMaterial map={s2Texture} transparent side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, -2.4, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 2.6]} />
+          <meshStandardMaterial color="#333345" />
+        </mesh>
+      </group>
     </group>
   );
 };
