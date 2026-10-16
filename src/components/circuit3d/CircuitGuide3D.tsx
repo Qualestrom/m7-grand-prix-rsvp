@@ -316,53 +316,70 @@ Present this pass at the Paddock Entrance for VIP check-in!
               <span>{isOrbitMode ? 'FREE ORBIT: ON' : 'FREE ORBIT VIEW'}</span>
             </button>
           </div>
-        </div>
-
-        {/* Venue Action Navigation Buttons Bar */}
+            {/* Venue Action Navigation Buttons Bar */}
         <div className="w-full max-w-4xl mx-auto pointer-events-auto bg-[#171722]/95 border-2 border-[#2E2E3E] p-3 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[#00D2BE] font-telemetry text-xs font-bold">
               <Trophy size={14} className="text-[#FFB800]" />
-              <span>CIRCUIT DESTINATION: {EVENT_CONFIG.venueName}</span>
+              <span>{EVENT_CONFIG.venueName ? `CIRCUIT DESTINATION: ${EVENT_CONFIG.venueName}` : 'VENUE CIRCUIT GUIDE'}</span>
             </div>
-            <p className="text-[11px] text-[#8E8E93] font-telemetry truncate max-w-md">
-              {EVENT_CONFIG.venueAddress}
-            </p>
+            {EVENT_CONFIG.venueAddress ? (
+              <p className="text-[11px] text-[#8E8E98] font-telemetry truncate max-w-md">
+                {EVENT_CONFIG.venueAddress}
+              </p>
+            ) : (
+              <p className="text-[11px] text-[#8E8E98] font-telemetry">
+                November 22, 2026 • Starts at 2:00 PM
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Google Maps Button */}
-            <a
-              href={EVENT_CONFIG.googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252533] hover:bg-[#303042] text-white font-telemetry text-xs font-bold rounded-lg border border-[#3E3E52] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <MapPin size={15} className="text-[#E10600]" />
-              <span>GOOGLE MAPS</span>
-            </a>
+            {EVENT_CONFIG.googleMapsUrl && (
+              <a
+                href={EVENT_CONFIG.googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252533] hover:bg-[#303042] text-white font-telemetry text-xs font-bold rounded-lg border border-[#3E3E52] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <MapPin size={15} className="text-[#E10600]" />
+                <span>GOOGLE MAPS</span>
+              </a>
+            )}
 
-            {/* Waze Button */}
-            <a
-              href={EVENT_CONFIG.wazeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252533] hover:bg-[#303042] text-white font-telemetry text-xs font-bold rounded-lg border border-[#3E3E52] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Navigation size={15} className="text-[#00D2BE]" />
-              <span>WAZE</span>
-            </a>
+            {EVENT_CONFIG.wazeUrl && (
+              <a
+                href={EVENT_CONFIG.wazeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252533] hover:bg-[#303042] text-white font-telemetry text-xs font-bold rounded-lg border border-[#3E3E52] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Navigation size={15} className="text-[#00D2BE]" />
+                <span>WAZE</span>
+              </a>
+            )}
 
             {/* Download Summary Pass Button */}
             <button
               onClick={handleDownloadSummary}
-              className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#E10600] hover:bg-[#FF1801] text-white font-telemetry text-xs font-bold rounded-lg shadow-[0_0_15px_rgba(225,6,0,0.5)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#252533] hover:bg-[#303042] text-white font-telemetry text-xs font-bold rounded-lg border border-[#3E3E52] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Save Event Pass Summary"
             >
-              <Download size={15} />
-              <span>PADDOCK PASS</span>
+              <Download size={14} className="text-[#00D2BE]" />
+              <span>SAVE PASS</span>
+            </button>
+
+            {/* Back to Invitation Button */}
+            <button
+              onClick={onBack}
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-[#E10600] hover:bg-[#FF1801] text-white font-telemetry text-xs font-bold rounded-lg shadow-[0_0_15px_rgba(225,6,0,0.5)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            >
+              <ArrowLeft size={15} />
+              <span>INVITATION</span>
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

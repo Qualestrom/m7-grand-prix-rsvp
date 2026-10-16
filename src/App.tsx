@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TelemetryLoader } from './components/TelemetryLoader';
 import { PaddockPass } from './components/PaddockPass';
 import { DriverRegistration } from './components/DriverRegistration';
@@ -41,48 +42,92 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-carbon-pattern text-white selection:bg-[#E10600] selection:text-white relative">
-      {/* Screen 1: 5-Lights Telemetry Loader */}
-      {currentScreen === 'loader' && (
-        <TelemetryLoader onComplete={() => setCurrentScreen('briefing')} />
-      )}
+    <div className="min-h-screen bg-carbon-pattern text-white selection:bg-[#E10600] selection:text-white relative overflow-x-hidden">
+      {/* Animated Screen Transitions */}
+      <AnimatePresence mode="wait">
+        {currentScreen === 'loader' && (
+          <motion.div
+            key="loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <TelemetryLoader onComplete={() => setCurrentScreen('briefing')} />
+          </motion.div>
+        )}
 
-      {/* Screen 2: Paddock Pass Event Briefing */}
-      {currentScreen === 'briefing' && (
-        <PaddockPass
-          onConfirmGridSlot={() => setCurrentScreen('registration-attending')}
-          onBoxDnf={() => setCurrentScreen('registration-dnf')}
-          onExploreCircuit={() => setCurrentScreen('circuit-guide')}
-        />
-      )}
+        {currentScreen === 'briefing' && (
+          <motion.div
+            key="briefing"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <PaddockPass
+              onConfirmGridSlot={() => setCurrentScreen('registration-attending')}
+              onBoxDnf={() => setCurrentScreen('registration-dnf')}
+            />
+          </motion.div>
+        )}
 
-      {/* Screen 3: Driver Registration (Attending) */}
-      {currentScreen === 'registration-attending' && (
-        <DriverRegistration
-          initialAttending={true}
-          onSuccess={() => setCurrentScreen('circuit-guide')}
-          onBack={() => setCurrentScreen('briefing')}
-        />
-      )}
+        {currentScreen === 'registration-attending' && (
+          <motion.div
+            key="registration-attending"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <DriverRegistration
+              initialAttending={true}
+              onSuccess={() => setCurrentScreen('circuit-guide')}
+              onBack={() => setCurrentScreen('briefing')}
+            />
+          </motion.div>
+        )}
 
-      {/* Screen 3 DNF: Driver Registration (Declining) */}
-      {currentScreen === 'registration-dnf' && (
-        <DriverRegistration
-          initialAttending={false}
-          onSuccess={() => setCurrentScreen('briefing')}
-          onBack={() => setCurrentScreen('briefing')}
-        />
-      )}
+        {currentScreen === 'registration-dnf' && (
+          <motion.div
+            key="registration-dnf"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <DriverRegistration
+              initialAttending={false}
+              onSuccess={() => setCurrentScreen('briefing')}
+              onBack={() => setCurrentScreen('briefing')}
+            />
+          </motion.div>
+        )}
 
-      {/* Screen 4: 3D Circuit Guide & Venue Reveal */}
-      {currentScreen === 'circuit-guide' && (
-        <CircuitGuide3D onBack={() => setCurrentScreen('briefing')} />
-      )}
+        {currentScreen === 'circuit-guide' && (
+          <motion.div
+            key="circuit-guide"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <CircuitGuide3D onBack={() => setCurrentScreen('briefing')} />
+          </motion.div>
+        )}
 
-      {/* Screen 5: /admin — The Pit Wall Live Telemetry Dashboard */}
-      {currentScreen === 'admin' && (
-        <PitWallAdmin onBackToApp={navigateToHome} />
-      )}
+        {currentScreen === 'admin' && (
+          <motion.div
+            key="admin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <PitWallAdmin onBackToApp={navigateToHome} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Subtle Floating Admin Access Trigger (visible outside of loader and admin screen) */}
       {currentScreen !== 'loader' && currentScreen !== 'admin' && (
