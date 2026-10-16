@@ -7,7 +7,10 @@ import { DeclineMessage } from './components/DeclineMessage';
 import { CircuitGuide3D } from './components/circuit3d/CircuitGuide3D';
 import { PitWallAdmin } from './components/PitWallAdmin';
 
-type ScreenState = 'loader' | 'briefing' | 'registration-attending' | 'registration-dnf' | 'circuit-guide' | 'admin';
+import { DramaticIntro } from './components/DramaticIntro';
+import { AudioController } from './components/AudioController';
+
+type ScreenState = 'loader' | 'dramatic-intro' | 'briefing' | 'registration-attending' | 'registration-dnf' | 'circuit-guide' | 'admin';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>(() => {
@@ -83,6 +86,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-carbon-pattern text-white selection:bg-[#E10600] selection:text-white relative overflow-x-hidden">
+      {/* Global F1 Soundtrack Controller */}
+      <AudioController />
+
       {/* Animated Screen Transitions */}
       <AnimatePresence mode="wait">
         {currentScreen === 'loader' && (
@@ -93,7 +99,19 @@ function App() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <TelemetryLoader onComplete={() => setCurrentScreen('briefing')} />
+            <TelemetryLoader onComplete={() => setCurrentScreen('dramatic-intro')} />
+          </motion.div>
+        )}
+
+        {currentScreen === 'dramatic-intro' && (
+          <motion.div
+            key="dramatic-intro"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <DramaticIntro onComplete={() => setCurrentScreen('briefing')} />
           </motion.div>
         )}
 

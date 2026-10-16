@@ -2,16 +2,22 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { M7Logo } from './M7Logo';
 import { EVENT_CONFIG } from '../config/eventConfig';
+import { soundtrackService } from '../services/soundtrackService';
 
 interface TelemetryLoaderProps {
   onComplete: () => void;
 }
 
 export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) => {
-  // Smoothly transition into the birthday party details after 2.6 seconds
+  const handleProceed = () => {
+    soundtrackService.play();
+    onComplete();
+  };
+
+  // Smoothly transition into the dramatic intro after 2.6 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      onComplete();
+      handleProceed();
     }, 2600);
 
     return () => clearTimeout(timer);
@@ -19,7 +25,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
 
   return (
     <div
-      onClick={onComplete}
+      onClick={handleProceed}
       className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-[#09090D] relative overflow-hidden select-none cursor-pointer px-4"
     >
       {/* Subtle Luxury Radial Vignette Glow */}
