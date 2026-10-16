@@ -16,10 +16,10 @@ export const M7Logo: React.FC<M7LogoProps> = ({
 }) => {
   // Proportions matching the muscular twin-ribbon F1 racetrack geometry
   const dimensions = {
-    sm: { width: 140, height: 66 },
-    md: { width: 220, height: 104 },
-    lg: { width: 330, height: 156 },
-    xl: { width: 460, height: 218 },
+    sm: { width: 140, height: 64 },
+    md: { width: 220, height: 101 },
+    lg: { width: 330, height: 152 },
+    xl: { width: 460, height: 211 },
   }[size];
 
   const rawId = React.useId();
@@ -38,12 +38,11 @@ export const M7Logo: React.FC<M7LogoProps> = ({
         className="relative filter drop-shadow-[0_0_26px_rgba(255,24,1,0.65)] drop-shadow-[0_4px_12px_rgba(255,24,1,0.45)]"
       >
         <svg
-          width={dimensions.width}
-          height={dimensions.height}
-          viewBox="-20 -40 380 180"
+          viewBox="-28.25 -23 370 170"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="overflow-visible"
+          className="overflow-visible w-full h-auto"
+          style={{ maxWidth: dimensions.width }}
         >
           <defs>
             {/* 

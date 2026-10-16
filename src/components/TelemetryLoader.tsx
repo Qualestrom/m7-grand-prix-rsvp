@@ -8,7 +8,7 @@ interface TelemetryLoaderProps {
 }
 
 export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) => {
-  // Smoothly transition into the birthday party details after 2.5 seconds
+  // Smoothly transition into the birthday party details after 2.6 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
@@ -38,9 +38,10 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
           scale: { duration: 0.8 },
           y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
         }}
-        className="z-10 flex flex-col items-center"
+        className="z-10 w-full max-w-[340px] sm:max-w-[420px] md:max-w-[460px] flex flex-col items-center justify-center mx-auto text-center"
       >
         <motion.div
+          className="w-full flex justify-center items-center"
           animate={{
             filter: [
               'drop-shadow(0 0 20px rgba(225,6,0,0.45))',
@@ -58,12 +59,12 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
-          className="mt-6 text-center"
+          className="mt-6 flex flex-col items-center text-center"
         >
-          <h1 className="font-f1-head font-black tracking-[0.25em] text-white text-base sm:text-lg uppercase italic">
+          <h1 className="font-f1-head font-black tracking-[0.25em] text-white text-base sm:text-lg uppercase italic -mr-[0.25em]">
             {EVENT_CONFIG.celebrantName}
           </h1>
-          <p className="font-telemetry text-xs tracking-[0.3em] text-[#8E8E98] uppercase mt-1">
+          <p className="font-telemetry text-xs tracking-[0.3em] text-[#8E8E98] uppercase mt-1 -mr-[0.3em]">
             7TH BIRTHDAY GRAND PRIX
           </p>
         </motion.div>
@@ -74,7 +75,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
         initial={{ opacity: 0 }}
         animate={{ opacity: [0.3, 0.7, 0.3] }}
         transition={{ delay: 1.2, duration: 2, repeat: Infinity }}
-        className="absolute bottom-8 font-telemetry text-[11px] tracking-[0.2em] text-[#8E8E98] uppercase z-10"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 font-telemetry text-[11px] tracking-[0.2em] text-[#8E8E98] uppercase z-10 text-center whitespace-nowrap -mr-[0.2em]"
       >
         TAP ANYWHERE TO ENTER
       </motion.div>
