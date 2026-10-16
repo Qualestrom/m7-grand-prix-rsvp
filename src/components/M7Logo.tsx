@@ -97,19 +97,20 @@ export const M7Logo: React.FC<M7LogoProps> = ({
             />
           </g>
 
-          {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC 20-DEGREE FORWARD RAKE */}
-          <g transform="skewX(-20)" style={{ transformOrigin: '170px 60px' }}>
+          {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC FORWARD RAKE */}
+          <g transform="skewX(-18)" style={{ transformOrigin: '170px 60px' }}>
             {/* ======================================================== */}
-            {/* THE "M": DUAL RACETRACK APEX RIBBONS */}
+            {/* THE "M": FORMULA 1 CHISELED APEX RACING GEOMETRY        */}
             {/* ======================================================== */}
 
-            {/* 1. M - Heavy Primary Red Ribbon (Tubular Racetrack) */}
+            {/* 1. M - Heavy Primary Red Track (Crisp, High-Speed F1 Apexes) */}
             <motion.path
-              d="M 52,100 L 52,36 C 52,18 80,18 82,36 L 96,72 C 100,82 108,82 112,72 L 126,36 C 128,18 156,18 156,36 L 156,100"
+              d="M 44,100 L 44,24 L 88,74 L 132,24 L 132,100"
               stroke="url(#f1GantryRed)"
               strokeWidth="22"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeLinecap="butt"
+              strokeLinejoin="miter"
+              strokeMiterlimit="3"
               fill="none"
               filter="url(#f1Glow)"
               initial={animated ? { pathLength: 0, opacity: 0 } : false}
@@ -117,70 +118,121 @@ export const M7Logo: React.FC<M7LogoProps> = ({
               transition={strokeTransition}
             />
 
-            {/* 2. M - Inner Negative-Space Racing Groove (White & Cyan) */}
+            {/* 2. M - Left & Right Base Aerodynamic Skirts */}
+            <line x1="33" y1="100" x2="55" y2="100" stroke="url(#f1GantryRed)" strokeWidth="4" />
+            <line x1="121" y1="100" x2="143" y2="100" stroke="url(#f1GantryRed)" strokeWidth="4" />
+
+            {/* 3. M - Inner Chrome Racing Groove (High-Torque Negative Space) */}
             <motion.path
-              d="M 52,100 L 52,36 C 52,18 80,18 82,36 L 96,72 C 100,82 108,82 112,72 L 126,36 C 128,18 156,18 156,36 L 156,100"
+              d="M 44,98 L 44,25 L 88,73 L 132,25 L 132,98"
               stroke="url(#chromeHighlight)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeWidth="3.5"
+              strokeLinecap="butt"
+              strokeLinejoin="miter"
+              strokeMiterlimit="3"
               fill="none"
-              opacity="0.9"
+              opacity="0.95"
               initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
+              animate={animated ? { pathLength: 1, opacity: 0.95 } : false}
               transition={{ ...strokeTransition, delay: 0.2 }}
             />
 
+            {/* 4. M - Center Telemetry Speed Notch */}
+            <polygon points="88,62 84,54 92,54" fill="#00D2BE" opacity="0.9" />
+
             {/* ======================================================== */}
-            {/* THE "7": SIGNATURE F1 HORIZONTAL BAR & DIAGONAL SLASH */}
+            {/* THE "7": SIGNATURE F1 HORIZONTAL ROOF, RAKED DIAGONAL &  */}
+            {/*          AUTHENTIC MOTORSPORT HORIZONTAL CROSSBAR        */}
             {/* ======================================================== */}
 
-            {/* 1. 7 - Heavy Primary Red Ribbon */}
+            {/* 1. 7 - Primary Heavy Red Track */}
             <motion.path
-              d="M 188,27 L 246,27 C 260,27 266,35 258,49 L 214,100"
+              d="M 176,24 L 256,24 L 202,100"
               stroke="url(#f1GantryRed)"
               strokeWidth="22"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeLinecap="butt"
+              strokeLinejoin="miter"
+              strokeMiterlimit="3"
               fill="none"
               filter="url(#f1Glow)"
               initial={animated ? { pathLength: 0, opacity: 0 } : false}
               animate={animated ? { pathLength: 1, opacity: 1 } : false}
-              transition={{ ...strokeTransition, delay: 0.3 }}
+              transition={{ ...strokeTransition, delay: 0.25 }}
             />
 
-            {/* 2. 7 - Inner Chrome Racing Groove */}
+            {/* 2. 7 - Authentic Motorsport Crossbar (Guarantees Unmistakable "7") */}
+            <motion.line
+              x1="206"
+              y1="60"
+              x2="246"
+              y2="60"
+              stroke="url(#f1GantryRed)"
+              strokeWidth="15"
+              strokeLinecap="butt"
+              filter="url(#f1Glow)"
+              initial={animated ? { scaleX: 0, opacity: 0 } : false}
+              animate={animated ? { scaleX: 1, opacity: 1 } : false}
+              transition={{ ...strokeTransition, delay: 0.4 }}
+            />
+
+            {/* 3. 7 - Base Aerodynamic Skirt */}
+            <line x1="191" y1="100" x2="213" y2="100" stroke="url(#f1GantryRed)" strokeWidth="4" />
+
+            {/* 4. 7 - Inner Chrome Racing Groove (Top Roof & Diagonal) */}
             <motion.path
-              d="M 188,27 L 246,27 C 260,27 266,35 258,49 L 214,100"
+              d="M 176,24 L 254,24 L 202,98"
               stroke="url(#chromeHighlight)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeWidth="3.5"
+              strokeLinecap="butt"
+              strokeLinejoin="miter"
+              strokeMiterlimit="3"
               fill="none"
-              opacity="0.9"
+              opacity="0.95"
               initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
+              animate={animated ? { pathLength: 1, opacity: 0.95 } : false}
               transition={{ ...strokeTransition, delay: 0.45 }}
             />
 
-            {/* 3. High-Speed DRS Slipstream Chevron Mark */}
+            {/* 5. 7 - Inner Chrome Groove for Crossbar */}
+            <motion.line
+              x1="208"
+              y1="60"
+              x2="244"
+              y2="60"
+              stroke="url(#chromeHighlight)"
+              strokeWidth="3"
+              strokeLinecap="butt"
+              opacity="0.9"
+              initial={animated ? { scaleX: 0 } : false}
+              animate={animated ? { scaleX: 1 } : false}
+              transition={{ delay: 0.5, duration: 0.3 }}
+            />
+
+            {/* 6. High-Speed DRS Slipstream Chevrons (FIA Gold & Cyan) */}
             <motion.polygon
-              points="272,28 284,24 278,38 266,42"
+              points="270,18 284,24 270,30 274,24"
               fill="#FFB800"
               initial={animated ? { scale: 0, opacity: 0 } : false}
               animate={animated ? { scale: 1, opacity: 1 } : false}
-              transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
+              transition={{ delay: 0.55, type: "spring", stiffness: 350 }}
+            />
+            <motion.polygon
+              points="285,18 299,24 285,30 289,24"
+              fill="#00D2BE"
+              initial={animated ? { scale: 0, opacity: 0 } : false}
+              animate={animated ? { scale: 1, opacity: 1 } : false}
+              transition={{ delay: 0.65, type: "spring", stiffness: 350 }}
             />
 
-            {/* 4. DRS Telemetry Active Dot */}
+            {/* 7. DRS Telemetry Active Strobe Indicator */}
             <motion.circle
-              cx="264"
-              cy="27"
+              cx="260"
+              cy="24"
               r="3.5"
-              fill="#00D2BE"
+              fill="#FFFFFF"
               initial={animated ? { scale: 0 } : false}
               animate={animated ? { scale: [1, 1.4, 1] } : false}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
             />
           </g>
         </svg>
@@ -214,3 +266,4 @@ export const M7Logo: React.FC<M7LogoProps> = ({
     </div>
   );
 };
+

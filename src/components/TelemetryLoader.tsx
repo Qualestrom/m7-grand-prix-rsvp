@@ -89,6 +89,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
 
   // 5-Red-Light Gantry Sequence
   useEffect(() => {
+    let advanceTimer: ReturnType<typeof setTimeout> | null = null;
     const t1 = setTimeout(() => { setLightsActive(1); playBeep(700); }, 600);
     const t2 = setTimeout(() => { setLightsActive(2); playBeep(700); }, 1200);
     const t3 = setTimeout(() => { setLightsActive(3); playBeep(700); }, 1800);
@@ -102,6 +103,10 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
       setRpm(12200);
       playEngineRev();
       setReadyToEnter(true);
+      // Automatically advance after a 2-second celebration
+      advanceTimer = setTimeout(() => {
+        onComplete();
+      }, 2200);
     }, 4200);
 
     return () => {
@@ -111,11 +116,12 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
       clearTimeout(t4);
       clearTimeout(t5);
       clearTimeout(outTimer);
+      if (advanceTimer) clearTimeout(advanceTimer);
     };
-  }, []);
+  }, [onComplete]);
 
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between items-center bg-f1-ambient px-4 py-6 overflow-hidden">
+    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between items-center bg-f1-ambient px-4 py-5 overflow-hidden">
       {/* Top Precision Broadcast Ticker */}
       <div className="w-full max-w-4xl flex items-center justify-between border-b border-white/[0.08] pb-3 text-xs font-telemetry">
         <div className="flex items-center gap-2.5">
@@ -124,7 +130,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
           <span className="text-[#8E8E98] hidden sm:inline">• ROUND 07 OFFICIAL TELEMETRY</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[#8E8E98] hover:text-white transition-colors cursor-pointer text-[10px] font-bold"
@@ -132,8 +138,16 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
             {soundEnabled ? <Volume2 size={13} className="text-[#00D2BE]" /> : <VolumeX size={13} />}
             <span>{soundEnabled ? 'AUDIO ON' : 'MUTED'}</span>
           </button>
+
+          <button
+            onClick={onComplete}
+            className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#E10600]/25 hover:bg-[#E10600] border border-[#E10600]/60 text-white font-bold text-[10px] transition-all cursor-pointer shadow-sm"
+          >
+            <span>SKIP INTRO</span>
+            <ArrowRight size={11} />
+          </button>
           
-          <div className="text-right text-[11px] font-telemetry">
+          <div className="text-right text-[11px] font-telemetry hidden md:block">
             <span className="text-[#8E8E98]">CELEBRANT: </span>
             <span className="text-white font-bold">{EVENT_CONFIG.celebrantName.toUpperCase()}</span>
           </div>
@@ -141,7 +155,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
       </div>
 
       {/* Main Stage */}
-      <div className="w-full max-w-xl flex flex-col items-center justify-center my-auto py-6 z-10">
+      <div className="w-full max-w-xl flex flex-col items-center justify-center my-auto py-4 z-10">
         {/* The Re-engineered Authentic Formula 1 M7 Logo */}
         <M7Logo size="lg" showSubtitle={true} animated={true} className="mb-8" />
 
@@ -195,13 +209,17 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
             {/* Gantry Status Announcement */}
             <div className="mt-5 text-center min-h-[32px] flex items-center justify-center">
               {lightsOut ? (
-                <motion.div
+                <motion.button
                   initial={{ scale: 0.85, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="px-5 py-2 bg-gradient-to-r from-[#FF1801] via-[#E10600] to-[#B30000] text-white font-f1-head font-black tracking-widest text-xs sm:text-sm uppercase rounded-lg shadow-[0_0_30px_rgba(225,6,0,0.8)] border border-white/30"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={onComplete}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#FF1801] via-[#E10600] to-[#B30000] text-white font-f1-head font-black tracking-widest text-xs sm:text-sm uppercase rounded-xl shadow-[0_0_30px_rgba(225,6,0,0.8)] border border-white/40 cursor-pointer flex items-center gap-2 group"
                 >
-                  🏁 LIGHTS OUT AND AWAY WE GO! 🏁
-                </motion.div>
+                  <span>🏁 LIGHTS OUT AND AWAY WE GO! 🏁</span>
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </motion.button>
               ) : (
                 <div className="font-telemetry text-xs tracking-wider text-[#FFB800] flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#FFB800] animate-ping" />
