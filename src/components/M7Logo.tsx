@@ -22,13 +22,21 @@ export const M7Logo: React.FC<M7LogoProps> = ({
     xl: { width: 460, height: 218 },
   }[size];
 
+  const rawId = React.useId();
+  const maskId = `m7-mask-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+
   return (
     <div className={`inline-flex flex-col items-center select-none ${className}`}>
       {/* 
         360° uncropped soft red glow bloom.
         Zero top cropping: ample headroom so the rounded crest of M stays 100% intact.
       */}
-      <div className="relative filter drop-shadow-[0_0_26px_rgba(255,24,1,0.65)] drop-shadow-[0_4px_12px_rgba(255,24,1,0.45)]">
+      <motion.div
+        initial={animated ? { opacity: 0, scale: 0.95 } : false}
+        animate={animated ? { opacity: 1, scale: 1 } : false}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="relative filter drop-shadow-[0_0_26px_rgba(255,24,1,0.65)] drop-shadow-[0_4px_12px_rgba(255,24,1,0.45)]"
+      >
         <svg
           width={dimensions.width}
           height={dimensions.height}
@@ -45,7 +53,7 @@ export const M7Logo: React.FC<M7LogoProps> = ({
               - 100% genuine transparent 6.5px racing slit.
             */}
             <mask
-              id="m7-perfect-aligned-mask"
+              id={maskId}
               maskUnits="userSpaceOnUse"
               x="-500"
               y="-500"
@@ -76,14 +84,11 @@ export const M7Logo: React.FC<M7LogoProps> = ({
             </mask>
           </defs>
 
-          {/* SKEWED GROUP: Skewed at -26° forward aerodynamic rake */}
-          <motion.g
+          {/* SKEWED GROUP: Skewed at -26° forward aerodynamic rake - standard g so Framer Motion never overrides transform */}
+          <g
             transform="skewX(-26)"
             style={{ transformOrigin: '160px 65px' }}
-            mask="url(#m7-perfect-aligned-mask)"
-            initial={animated ? { opacity: 0, scale: 0.95 } : false}
-            animate={animated ? { opacity: 1, scale: 1 } : false}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            mask={`url(#${maskId})`}
           >
             {/* THE "M": 44px extra-wide solid red ribbon, ends at baseline y=124 */}
             <path
@@ -104,9 +109,9 @@ export const M7Logo: React.FC<M7LogoProps> = ({
               strokeLinecap="butt"
               strokeLinejoin="round"
             />
-          </motion.g>
+          </g>
         </svg>
-      </div>
+      </motion.div>
 
       {showSubtitle && (
         <motion.div
