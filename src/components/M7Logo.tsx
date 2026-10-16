@@ -5,7 +5,6 @@ interface M7LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showSubtitle?: boolean;
   animated?: boolean;
-  slitColor?: 'dark' | 'white';
   className?: string;
 }
 
@@ -13,177 +12,86 @@ export const M7Logo: React.FC<M7LogoProps> = ({
   size = 'md',
   showSubtitle = true,
   animated = true,
-  slitColor = 'dark',
   className = '',
 }) => {
+  // Exact 1:1 Formula 1 Aspect Ratio: Width = 31.5, Height = 6.0 (~5.25:1)
   const dimensions = {
-    sm: { width: 140, height: 60, scale: 0.65 },
-    md: { width: 220, height: 95, scale: 0.9 },
-    lg: { width: 330, height: 140, scale: 1.25 },
-    xl: { width: 450, height: 185, scale: 1.65 },
+    sm: { width: 140, height: 38 },
+    md: { width: 220, height: 58 },
+    lg: { width: 330, height: 86 },
+    xl: { width: 460, height: 120 },
   }[size];
-
-  const strokeTransition = {
-    duration: 1.2,
-    ease: [0.16, 1, 0.3, 1] as const,
-  };
-
-  const slitStrokeColor = slitColor === 'white' ? '#FFFFFF' : '#09090D';
 
   return (
     <div className={`inline-flex flex-col items-center select-none ${className}`}>
-      <div className="relative filter drop-shadow-[0_4px_32px_rgba(255,24,1,0.55)]">
+      {/* 
+        360° uncropped soft red glow bloom.
+        Zero clipPath, zero masks: natural dispersion in all directions.
+      */}
+      <div className="relative filter drop-shadow-[0_0_28px_rgba(255,24,1,0.65)] drop-shadow-[0_4px_14px_rgba(255,24,1,0.45)]">
         <svg
           width={dimensions.width}
           height={dimensions.height}
-          viewBox="0 0 350 140"
-          fill="none"
+          viewBox="-0.5 8.2 31 7.6"
+          fill="#FF1801"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >
-          <defs>
-            {/* Authentic Formula 1 Red Gradient */}
-            <linearGradient id="f1GantryRed" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FF2A14" />
-              <stop offset="50%" stopColor="#FF1801" />
-              <stop offset="100%" stopColor="#D60A00" />
-            </linearGradient>
+          {/* ======================================================== */}
+          {/* THE "M": 1:1 FORMULA 1 DUAL-RIBBON SPEED VECTOR (#FF1801) */}
+          {/* ======================================================== */}
+          {/* M - Upper Ribbon (Above y=11.24 horizontal racing slit) */}
+          <motion.path
+            d="M 0,15 C 0,15 2.71,12.3 4.22,10.81 C 5.77,9.34 6.54,9 9.39,9 L 11.5,9 L 13.74,11.24 L 11.5,11.24 L 10.46,10.2 C 8.5,10.2 8.0,10.34 7.08,11.21 C 6.43,11.83 5.0,13.25 4.23,14 L 3.38,15 Z M 13.74,11.24 L 15.98,9 L 18.5,9 L 16.26,11.24 L 14.5,11.24 L 15.54,10.2 L 14.78,10.2 Z"
+            initial={animated ? { opacity: 0, x: -10 } : false}
+            animate={animated ? { opacity: 1, x: 0 } : false}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          />
 
-            {/* Specular Chrome Highlight */}
-            <linearGradient id="chromeHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
-              <stop offset="50%" stopColor="#E5E5F0" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.85" />
-            </linearGradient>
+          {/* M - Lower Ribbon (Below y=11.61 horizontal racing slit) */}
+          <motion.path
+            d="M 4,15 C 4,15 5.44,13.57 6.33,12.68 C 7.28,11.73 7.66,11.61 9.88,11.61 L 11.87,11.61 L 13.74,13.48 L 15.61,11.61 L 17.6,11.61 L 14.21,15.0 L 12.2,15.0 L 13.74,13.46 L 11.0,15.0 L 7.15,15 C 7.15,15 7.92,14.25 8.18,14.2 C 9.21,14.2 9.47,14.25 9.88,13.84 L 9.88,11.61 Z"
+            initial={animated ? { opacity: 0, x: -10 } : false}
+            animate={animated ? { opacity: 1, x: 0 } : false}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
+          />
 
-            {/* Flat Horizontal Baseline Clip: Ensures razor-flat bottom edge */}
-            <clipPath id="m7BaselineClip">
-              <rect x="0" y="0" width="450" height="114" />
-            </clipPath>
+          {/* ======================================================== */}
+          {/* THE "7": 1:1 PARTNER TO THE OFFICIAL F1 "1" (#FF1801)    */}
+          {/* ======================================================== */}
+          {/* 7 - Horizontal Top Roof (thickness = 2.24, y=9.0 to 11.24) */}
+          <motion.path
+            d="M 19.14,9.0 L 26.0,9.0 L 23.76,11.24 L 16.90,11.24 Z"
+            initial={animated ? { opacity: 0, x: 10 } : false}
+            animate={animated ? { opacity: 1, x: 0 } : false}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.14 }}
+          />
 
-            {/* Neon Bloom Glow Filter */}
-            <filter id="f1Glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="4.5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          {/* MAIN FORMULA 1 "M7" EMBLEM WITH AUTHENTIC 26-DEGREE FORWARD RAKE */}
-          <g transform="skewX(-26)" style={{ transformOrigin: '160px 65px' }} clipPath="url(#m7BaselineClip)">
-            {/* ======================================================== */}
-            {/* THE "M": FORMULA 1 RACETRACK APEX DUAL-RIBBON (36px WIDE) */}
-            {/* ======================================================== */}
-
-            {/* 1. M - Wide Heavy Red Track */}
-            <motion.path
-              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
-              stroke="url(#f1GantryRed)"
-              strokeWidth="36"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              filter="url(#f1Glow)"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 1 } : false}
-              transition={strokeTransition}
-            />
-
-            {/* 2. M - Inner Negative-Space Racing Groove */}
-            <motion.path
-              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
-              stroke={slitStrokeColor}
-              strokeWidth="5.5"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 1 } : false}
-              transition={{ ...strokeTransition, delay: 0.15 }}
-            />
-
-            {/* 3. M - Chrome Specular Racing Highlight */}
-            <motion.path
-              d="M 44,130 L 44,38 C 44,23 58,18 72,26 L 108,72 L 144,26 C 158,18 172,23 172,38 L 172,130"
-              stroke="url(#chromeHighlight)"
-              strokeWidth="1.8"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              opacity="0.9"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
-              transition={{ ...strokeTransition, delay: 0.2 }}
-            />
-
-            {/* ======================================================== */}
-            {/* THE "7": NATURAL MOTORSPORT ROOF & RAKED LEG (36px WIDE) */}
-            {/* ======================================================== */}
-
-            {/* 1. 7 - Wide Heavy Red Track (No Crossbar) */}
-            <motion.path
-              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
-              stroke="url(#f1GantryRed)"
-              strokeWidth="36"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              filter="url(#f1Glow)"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 1 } : false}
-              transition={{ ...strokeTransition, delay: 0.2 }}
-            />
-
-            {/* 2. 7 - Inner Negative-Space Racing Groove */}
-            <motion.path
-              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
-              stroke={slitStrokeColor}
-              strokeWidth="5.5"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 1 } : false}
-              transition={{ ...strokeTransition, delay: 0.3 }}
-            />
-
-            {/* 3. 7 - Chrome Specular Racing Highlight */}
-            <motion.path
-              d="M 198,26 L 256,26 C 269,26 273,34 265,46 L 212,130"
-              stroke="url(#chromeHighlight)"
-              strokeWidth="1.8"
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-              fill="none"
-              opacity="0.9"
-              initial={animated ? { pathLength: 0, opacity: 0 } : false}
-              animate={animated ? { pathLength: 1, opacity: 0.9 } : false}
-              transition={{ ...strokeTransition, delay: 0.35 }}
-            />
-          </g>
+          {/* 7 - Slanted 45° Leg (Exact F1 "1" parallelogram: w=3.61) */}
+          <motion.path
+            d="M 26.0,9.0 L 20.0,15.0 L 23.61,15.0 L 29.61,9.0 Z"
+            initial={animated ? { opacity: 0, x: 10 } : false}
+            animate={animated ? { opacity: 1, x: 0 } : false}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          />
         </svg>
       </div>
 
-      {/* OFFICIAL FORMULA 1 MINIMAL TYPOGRAPHY BADGE */}
       {showSubtitle && (
         <motion.div
-          initial={animated ? { opacity: 0, y: 6 } : false}
+          initial={animated ? { opacity: 0, y: 8 } : false}
           animate={animated ? { opacity: 1, y: 0 } : false}
-          transition={{ delay: 0.5, duration: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-3 text-center"
         >
-          <div className="flex items-center justify-center gap-2">
-            <span className="h-[2px] w-5 bg-gradient-to-r from-transparent to-[#FF1801]"></span>
-            <span className="font-f1-head font-black tracking-[0.26em] text-xs sm:text-sm text-white uppercase italic">
-              MATTHEU AMARI
-            </span>
-            <span className="h-[2px] w-5 bg-gradient-to-l from-transparent to-[#FF1801]"></span>
+          <div className="font-heading font-black tracking-[0.3em] uppercase text-xs md:text-sm text-foreground flex items-center justify-center gap-2">
+            <span>MATTHEU</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-racing-red inline-block" />
+            <span>AMARI</span>
           </div>
-          <p className="font-telemetry text-[9px] sm:text-[10px] tracking-[0.24em] text-[#8E8E93] uppercase font-bold mt-0.5">
-            TURNING 7 • GRAND PRIX 2026
-          </p>
+          <div className="font-mono text-[10px] tracking-[0.25em] text-racing-red uppercase font-semibold mt-0.5">
+            GRAND PRIX 2026 &bull; 7TH BIRTHDAY
+          </div>
         </motion.div>
       )}
     </div>
