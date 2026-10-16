@@ -334,7 +334,7 @@ Present this pass at the Paddock Entrance for VIP check-in!
             )}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             {EVENT_CONFIG.googleMapsUrl && (
               <a
                 href={EVENT_CONFIG.googleMapsUrl}

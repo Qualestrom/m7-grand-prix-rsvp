@@ -67,7 +67,7 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
       <div className="absolute top-0 left-0 right-0 h-1.5 kerb-inlay-h opacity-70 z-10" />
 
       {/* F1 Broadcast Telemetry HUD Header */}
-      <div className="absolute top-5 left-5 font-telemetry text-[11px] text-[#8E8E98] tracking-[0.2em] uppercase flex items-center gap-2 z-10">
+      <div className="absolute top-4 left-4 sm:top-5 sm:left-5 font-telemetry text-[10px] sm:text-[11px] text-[#8E8E98] tracking-[0.2em] uppercase flex items-center gap-2 z-10">
         <span className="w-2 h-2 rounded-full bg-[#E10600] animate-ping" />
         <span className="text-[#E10600] font-bold">LIVE ON TRACK</span>
         <span className="hidden sm:inline text-white/30">•</span>
@@ -78,14 +78,14 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
       <button
         onClick={handleSkip}
         type="button"
-        className="absolute top-4 right-18 sm:right-32 z-40 px-3 py-1.5 rounded-full bg-[#151520]/80 hover:bg-[#151520] border border-white/15 hover:border-white/40 text-[#8E8E98] hover:text-white font-telemetry text-[11px] tracking-widest uppercase transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-lg"
+        className="absolute top-3.5 right-14 sm:top-4 sm:right-36 z-40 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#151520]/80 hover:bg-[#151520] border border-white/15 hover:border-white/40 text-[#8E8E98] hover:text-white font-telemetry text-[10px] sm:text-[11px] tracking-widest uppercase transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-lg"
       >
         <span>SKIP</span>
-        <FastForward size={13} />
+        <FastForward size={12} />
       </button>
 
-      {/* Central Dramatic Animation Container */}
-      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center justify-center text-center py-10 min-h-[340px]">
+      {/* Central Dramatic Animation Container - Elevated for cinematic depth over racing track */}
+      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center justify-center text-center pt-14 sm:pt-20 pb-8 min-h-[280px] -translate-y-4 sm:-translate-y-8">
         <AnimatePresence mode="wait">
           {/* BEAT 1: "MATTHEU AMARI" */}
           {stage === 'name' && (
@@ -95,19 +95,20 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.85, filter: 'blur(10px)' }}
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center px-2"
             >
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="flex items-center gap-2 text-[#E10600] font-telemetry text-xs sm:text-sm tracking-[0.35em] uppercase font-bold mb-4 bg-black/60 px-4 py-1.5 rounded-full border border-[#E10600]/30 backdrop-blur-md shadow-[0_0_20px_rgba(225,6,0,0.3)]"
+                className="flex items-center gap-1.5 sm:gap-2 text-[#E10600] font-telemetry text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.35em] uppercase font-bold mb-3 sm:mb-4 bg-black/60 px-3 sm:px-4 py-1.5 rounded-full border border-[#E10600]/30 backdrop-blur-md shadow-[0_0_20px_rgba(225,6,0,0.3)]"
               >
-                <Zap size={14} className="fill-[#E10600] text-[#E10600]" />
-                <span>CHAMPIONSHIP DRIVER • POLE POSITION</span>
+                <Zap size={13} className="fill-[#E10600] text-[#E10600]" />
+                <span className="hidden xs:inline">CHAMPIONSHIP DRIVER • </span>
+                <span>POLE POSITION</span>
               </motion.div>
 
-              <h1 className="font-f1-head text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_40px_rgba(225,6,0,0.8)]">
+              <h1 className="font-f1-head text-3xl sm:text-5xl md:text-7xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_40px_rgba(225,6,0,0.8)]">
                 {EVENT_CONFIG.celebrantName}
               </h1>
 
@@ -190,16 +191,16 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
               </motion.div>
 
               {/* Name */}
-              <h1 className="font-f1-head text-3xl sm:text-5xl md:text-6xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_35px_rgba(255,255,255,0.6)]">
+              <h1 className="font-f1-head text-2xl sm:text-4xl md:text-6xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_35px_rgba(255,255,255,0.6)]">
                 {EVENT_CONFIG.celebrantName}
               </h1>
 
               {/* IS TURNING 7! */}
               <div className="mt-2 sm:mt-3 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-                <span className="font-telemetry text-base sm:text-2xl md:text-3xl font-extrabold tracking-[0.25em] text-[#00D2BE] uppercase drop-shadow-[0_0_20px_rgba(0,210,190,0.6)]">
+                <span className="font-telemetry text-sm sm:text-xl md:text-3xl font-extrabold tracking-[0.2em] sm:tracking-[0.25em] text-[#00D2BE] uppercase drop-shadow-[0_0_20px_rgba(0,210,190,0.6)]">
                   IS TURNING
                 </span>
-                <span className="font-f1-head text-4xl sm:text-6xl md:text-7xl font-black italic text-[#E10600] uppercase drop-shadow-[0_0_45px_rgba(225,6,0,1)] animate-pulse">
+                <span className="font-f1-head text-3xl sm:text-5xl md:text-7xl font-black italic text-[#E10600] uppercase drop-shadow-[0_0_45px_rgba(225,6,0,1)] animate-pulse">
                   7!
                 </span>
               </div>

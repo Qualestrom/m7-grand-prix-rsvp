@@ -36,7 +36,7 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-lg z-10 my-auto double-bezel"
       >
-        <div className="double-bezel-inner p-8 sm:p-10 flex flex-col items-center text-center">
+        <div className="double-bezel-inner p-5 sm:p-8 md:p-10 flex flex-col items-center text-center">
           {/* Top Red-and-White Kerb Metallic Inlay */}
           <div className="absolute top-0 left-0 right-0 h-1.5 kerb-inlay-h" />
 
@@ -45,16 +45,16 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
             initial={{ scale: 0.95 }}
             animate={{ y: [-4, 4, -4] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="mb-6 pt-2"
+            className="mb-4 sm:mb-6 pt-1 sm:pt-2"
           >
             <M7Logo size="md" showSubtitle={false} animated={false} />
           </motion.div>
 
           {/* Celebrant Name & Birthday */}
-          <h1 className="font-f1-head text-3xl sm:text-4xl font-black tracking-tight text-white uppercase italic">
+          <h1 className="font-f1-head text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white uppercase italic">
             {EVENT_CONFIG.celebrantName}
           </h1>
-          <p className="font-telemetry text-sm tracking-[0.25em] text-[#00D2BE] font-bold uppercase mt-1.5 mb-8">
+          <p className="font-telemetry text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.25em] text-[#00D2BE] font-bold uppercase mt-1 sm:mt-1.5 mb-6 sm:mb-8">
             TURNING 7 • GRAND PRIX
           </p>
 

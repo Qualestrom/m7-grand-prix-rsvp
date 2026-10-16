@@ -48,9 +48,9 @@ export const AudioController: React.FC = () => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         type="button"
-        className={`group h-11 sm:h-12 rounded-full border transition-all duration-500 ease-in-out flex items-center cursor-pointer backdrop-blur-md select-none shadow-xl overflow-hidden ${
+        className={`group h-10 sm:h-12 rounded-full border transition-all duration-500 ease-in-out flex items-center cursor-pointer backdrop-blur-md select-none shadow-xl overflow-hidden ${
           showText
-            ? 'px-3.5 sm:px-4 max-w-[290px]'
+            ? 'px-2.5 sm:px-4 max-w-[205px] sm:max-w-[290px]'
             : 'w-10 h-10 sm:w-11 sm:h-11 justify-center p-0 max-w-[44px]'
         } ${
           isSoundActive
@@ -71,16 +71,16 @@ export const AudioController: React.FC = () => {
 
             {/* Stretched Prompt Text */}
             <span
-              className={`font-telemetry text-xs sm:text-[13px] font-bold text-white tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
-                showText ? 'max-w-[160px] opacity-100 ml-2 mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
+              className={`font-telemetry text-[11px] sm:text-[13px] font-bold text-white tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
+                showText ? 'max-w-[130px] sm:max-w-[160px] opacity-100 ml-1.5 sm:ml-2 mr-1.5 sm:mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
               }`}
             >
-              Want Silent Mode?
+              Silent Mode?
             </span>
 
             {/* Speaker Icon */}
             <Volume2
-              size={17}
+              size={15}
               className={`text-[#00D2BE] shrink-0 group-hover:scale-110 transition-transform ${
                 !showText ? 'hidden' : ''
               }`}
@@ -91,7 +91,7 @@ export const AudioController: React.FC = () => {
             {/* Initial / Muted State Icon */}
             <div className="flex items-center justify-center shrink-0">
               <Music
-                size={16}
+                size={15}
                 className="text-[#E10600] group-hover:scale-110 transition-transform animate-pulse"
               />
             </div>
@@ -99,14 +99,14 @@ export const AudioController: React.FC = () => {
             {/* "Want some Music?" & Immersion Suggestion */}
             <div
               className={`flex flex-col text-left justify-center overflow-hidden transition-all duration-500 ease-in-out ${
-                showText ? 'max-w-[210px] opacity-100 ml-2.5 mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
+                showText ? 'max-w-[150px] sm:max-w-[210px] opacity-100 ml-2 sm:ml-2.5 mr-1.5 sm:mr-2' : 'max-w-0 opacity-0 ml-0 mr-0'
               }`}
             >
-              <span className="font-telemetry text-xs sm:text-[12.5px] font-bold text-white tracking-wide whitespace-nowrap leading-none">
+              <span className="font-telemetry text-[11px] sm:text-[12.5px] font-bold text-white tracking-wide whitespace-nowrap leading-none">
                 Want some Music?
               </span>
-              <span className="font-telemetry text-[9.5px] sm:text-[10px] text-[#00D2BE] font-semibold tracking-wider uppercase whitespace-nowrap mt-1 leading-none">
-                Best for full immersion 🎧
+              <span className="font-telemetry text-[8.5px] sm:text-[10px] text-[#00D2BE] font-semibold tracking-wider uppercase whitespace-nowrap mt-1 leading-none">
+                Best for immersion 🎧
               </span>
             </div>
 

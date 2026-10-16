@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { M7Logo } from './M7Logo';
 import { EVENT_CONFIG } from '../config/eventConfig';
 import { soundtrackService } from '../services/soundtrackService';
+import { ChevronRight } from 'lucide-react';
 
 interface TelemetryLoaderProps {
   onComplete: () => void;
@@ -14,18 +15,11 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
     onComplete();
   };
 
-  // Smoothly transition into the dramatic intro after 2.8 seconds
   useEffect(() => {
-    // Start sound in low bass mode (muffled exterior garage ambience)
+    // Start sound in warm bass mode (muffled exterior garage ambience)
     soundtrackService.closeToBass(0.1);
     soundtrackService.play();
-
-    const timer = setTimeout(() => {
-      handleProceed();
-    }, 2800);
-
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, []);
 
   return (
     <div
@@ -68,7 +62,7 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
           className="mt-6 flex flex-col items-center text-center"
         >
           <h1 className="font-f1-head font-black tracking-[0.25em] text-white text-base sm:text-lg uppercase italic -mr-[0.25em]">
@@ -80,14 +74,32 @@ export const TelemetryLoader: React.FC<TelemetryLoaderProps> = ({ onComplete }) 
         </motion.div>
       </motion.div>
 
-      {/* Tap anywhere cue */}
+      {/* Interactive Tap Anywhere Prompt */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0.3, 0.75, 0.3] }}
-        transition={{ delay: 0.8, duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 font-telemetry text-[11px] tracking-[0.25em] text-[#8E8E98] uppercase z-10 text-center whitespace-nowrap -mr-[0.25em]"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.8 }}
+        className="absolute bottom-6 sm:bottom-12 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-full max-w-[340px] px-4"
       >
-        TAP ANYWHERE TO CONTINUE
+        <motion.div
+          animate={{
+            scale: [1, 1.04, 1],
+            boxShadow: [
+              '0 0 15px rgba(225,6,0,0.25)',
+              '0 0 35px rgba(225,6,0,0.65)',
+              '0 0 15px rgba(225,6,0,0.25)',
+            ],
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#151520]/90 border border-[#E10600]/40 text-white font-telemetry text-[10.5px] sm:text-xs tracking-[0.15em] sm:tracking-[0.25em] uppercase flex items-center justify-center gap-2 backdrop-blur-md cursor-pointer hover:border-[#E10600] transition-colors whitespace-nowrap"
+        >
+          <span className="w-2 h-2 rounded-full bg-[#E10600] animate-ping" />
+          <span>TAP ANYWHERE TO ENTER</span>
+          <ChevronRight size={13} className="text-[#E10600]" />
+        </motion.div>
+        <span className="font-telemetry text-[8.5px] sm:text-[10px] tracking-[0.12em] sm:tracking-[0.2em] text-[#8E8E98] uppercase whitespace-nowrap text-center">
+          COCKPIT INITIALIZED // READY TO RACE
+        </span>
       </motion.div>
     </div>
   );
