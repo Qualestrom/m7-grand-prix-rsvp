@@ -26,7 +26,7 @@ class SoundtrackService {
     try {
       this.audio = new Audio('/audio/hans-zimmer-f1.m4a');
       this.audio.loop = true;
-      this.audio.volume = 0.8;
+      this.audio.volume = 0.85;
       this.audio.preload = 'auto';
 
       this.audio.addEventListener('play', () => {
@@ -62,7 +62,7 @@ class SoundtrackService {
       // Low-pass Biquad Filter: cuts off trebles during the loading screen
       this.filterNode = this.audioCtx.createBiquadFilter();
       this.filterNode.type = 'lowpass';
-      // Low warm frequency (1300 Hz) so music is clearly audible without high trebles
+      // Low warm frequency (1300 Hz) so music is clearly audible on phone/laptop speakers
       this.filterNode.frequency.setValueAtTime(
         this.isMuffledState ? 1300 : 20000,
         this.audioCtx.currentTime
@@ -86,14 +86,14 @@ class SoundtrackService {
     const unlock = () => {
       this.resumeContext();
       if (this.audio) {
-        this.audio.muted = this.isMutedState;
+        // If user hasn't explicitly chosen to mute, immediately unmute on first gesture!
+        if (!this.isMutedState) {
+          this.audio.muted = false;
+          if (this.gainNode && this.audioCtx) {
+            this.gainNode.gain.setValueAtTime(1, this.audioCtx.currentTime);
+          }
+        }
         this.audio.play().catch(() => {});
-      }
-      if (this.gainNode && this.audioCtx) {
-        this.gainNode.gain.setValueAtTime(
-          this.isMutedState ? 0 : 1,
-          this.audioCtx.currentTime
-        );
       }
       this.isPlayingState = true;
       this.notify();
@@ -119,7 +119,7 @@ class SoundtrackService {
 
   /**
    * Set muffled state:
-   * true = Low-pass filter active (360 Hz) - deep bass rumble for loading screen
+   * true = Low-pass filter active (1300 Hz) - deep bass rumble for loading screen
    * false = Trebles open (20,000 Hz) - full explosive sound for dramatic intro & pass
    */
   public setMuffled(muffled: boolean, rampSeconds = 0.45) {
@@ -174,23 +174,29 @@ class SoundtrackService {
 
   /**
    * Toggles mute without stopping the audio playback.
-   * Music continues running in the background while muted.
+   * If sound was muted or blocked by browser autoplay, it immediately UNMUTES on the very first click!
    */
   public toggleMute(): void {
     if (!this.audio) return;
-    this.isMutedState = !this.isMutedState;
+    this.resumeContext();
 
-    if (this.gainNode && this.audioCtx) {
-      this.gainNode.gain.setValueAtTime(
-        this.isMutedState ? 0 : 1,
-        this.audioCtx.currentTime
-      );
-    }
-    this.audio.muted = this.isMutedState;
+    // If currently muted OR if browser autoplay kept it muted, UNMUTE on this click!
+    const shouldUnmute = this.isMutedState || this.audio.muted;
 
-    // Keep playing in background even when muted
-    if (!this.isPlayingState) {
+    if (shouldUnmute) {
+      this.isMutedState = false;
+      this.audio.muted = false;
+      if (this.gainNode && this.audioCtx) {
+        this.gainNode.gain.setValueAtTime(1, this.audioCtx.currentTime);
+      }
       this.play().catch(() => {});
+    } else {
+      // Mute the audio track while letting it continue playing in background
+      this.isMutedState = true;
+      this.audio.muted = true;
+      if (this.gainNode && this.audioCtx) {
+        this.gainNode.gain.setValueAtTime(0, this.audioCtx.currentTime);
+      }
     }
     this.notify();
   }
