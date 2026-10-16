@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --f1-red: #E10600;
+    --f1-carbon: #15151E;
+    --f1-asphalt: #1F1F27;
+    --f1-panel: #262631;
+    --f1-telemetry: #00D2BE;
+    --f1-drs: #FFB800;
+    --f1-kerb-white: #FFFFFF;
+    --f1-gray: #8E8E93;
+    --f1-border: #383842;
+  }
+
+  body {
+    background-color: var(--f1-carbon);
+    color: #FFFFFF;
+    font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Carbon Fiber Texture Background */
+.bg-carbon-pattern {
+  background-color: #15151E;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(225, 6, 0, 0.15), transparent 45%),
+    linear-gradient(45deg, #111118 25%, transparent 25%), 
+    linear-gradient(-45deg, #111118 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #111118 75%), 
+    linear-gradient(-45deg, transparent 75%, #111118 75%);
+  background-size: 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
+  background-position: 0 0, 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+/* F1 Red & White Alternating Kerb Strips */
+.kerb-strip-h {
+  background: repeating-linear-gradient(
+    90deg,
+    #E10600,
+    #E10600 12px,
+    #FFFFFF 12px,
+    #FFFFFF 24px
+  );
+  height: 4px;
+  width: 100%;
+}
+
+.kerb-strip-v {
+  background: repeating-linear-gradient(
+    180deg,
+    #E10600,
+    #E10600 12px,
+    #FFFFFF 12px,
+    #FFFFFF 24px
+  );
+  width: 4px;
+}
+
+/* Official F1 Chamfered Angle Shapes */
+.f1-chamfer {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+.f1-chamfer-tl-br {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.f1-skew-btn {
+  transform: skewX(-14deg);
+}
+
+.f1-skew-btn > * {
+  transform: skewX(14deg);
+}
+
+/* Telemetry Font Utility */
+.font-telemetry {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.font-f1-head {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.font-f1-display {
+  font-family: 'Titillium Web', sans-serif;
+}
+
+/* Glow Highlights */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 210, 190, 0.45);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(225, 6, 0, 0.55);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(255, 184, 0, 0.5);
+}
+
+/* Timing Tower Lines */
+.timing-line {
+  border-left: 3px solid #E10600;
+}
+
+.timing-line-purple {
+  border-left: 3px solid #A855F7;
+}
+
+.timing-line-cyan {
+  border-left: 3px solid #00D2BE;
+}
+
+.timing-line-yellow {
+  border-left: 3px solid #FFB800;
+}
+
+/* Custom Scrollbar for sleek F1 look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #15151E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2E2E38;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #E10600;
+}
