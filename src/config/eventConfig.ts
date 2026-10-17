@@ -23,6 +23,7 @@ export interface EventConfig {
   venueAddress: string;
   googleMapsUrl: string;
   wazeUrl: string;
+  attireNotice: string;
   adminPasscode: string;
   weather: {
     condition: string;
@@ -55,6 +56,7 @@ export const EVENT_CONFIG: EventConfig = {
   venueAddress: "B5 L27 St John Subdivision, City of Santa Rosa, 4026 Laguna",
   googleMapsUrl: "https://www.google.com/maps/dir/?api=1&destination=14.3152787,121.1187379&destination_place_id=ChIJE41NbBXZlzMRdtuGqiWPE_s&query=JSH+Events+Place+Santa+Rosa",
   wazeUrl: "https://www.waze.com/live-map/directions/ph/calabarzon/city-of-santa-rosa/jsh-events-place?to=place.ChIJE41NbBXZlzMRdtuGqiWPE_s",
+  attireNotice: "No outfit theme required — come in whatever you feel most comfortable in!",
   adminPasscode: "M7PITWALL",
   weather: {
     condition: "Sunny & High Octane",

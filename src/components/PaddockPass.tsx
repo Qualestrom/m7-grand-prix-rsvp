@@ -16,7 +16,8 @@ import {
   Edit3, 
   XCircle, 
   ExternalLink,
-  Users
+  Users,
+  Shirt
 } from 'lucide-react';
 
 export const PaddockPass: React.FC = () => {
@@ -175,6 +176,26 @@ export const PaddockPass: React.FC = () => {
                   <span className="font-telemetry text-[11px] font-bold">WAZE</span>
                 </a>
               )}
+            </div>
+          </div>
+
+          {/* Attire / Outfit Theme Disclaimer Banner */}
+          <div className="w-full p-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-left mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#FFB800]/15 border border-[#FFB800]/30 flex items-center justify-center shrink-0">
+              <Shirt size={16} className="text-[#FFB800]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-telemetry text-[10px] font-bold tracking-wider text-[#FFB800] uppercase">
+                  ATTIRE & DRESS CODE
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-telemetry font-bold text-white uppercase tracking-wider">
+                  NO THEME REQUIRED
+                </span>
+              </div>
+              <p className="font-telemetry text-xs text-[#A0A0B0] mt-0.5 leading-snug">
+                {EVENT_CONFIG.attireNotice}
+              </p>
             </div>
           </div>
 
