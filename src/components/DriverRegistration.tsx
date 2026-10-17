@@ -1,29 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { rsvpService, type Companion } from '../services/rsvpService';
+import { rsvpService, type Companion, type RsvpRecord } from '../services/rsvpService';
+import { getDeviceNavigationMapUrl } from '../services/mapUtils';
 import { M7Logo } from './M7Logo';
-import { X, Plus, Trash2, CheckCircle2, User, Users, Compass, ArrowRight } from 'lucide-react';
+import { 
+  X, 
+  Plus, 
+  Trash2, 
+  CheckCircle2, 
+  User, 
+  Users, 
+  Navigation, 
+  Edit3, 
+  XCircle, 
+  ExternalLink 
+} from 'lucide-react';
 import { EVENT_CONFIG } from '../config/eventConfig';
 
 interface DriverRegistrationProps {
   initialAttending?: boolean;
-  onSuccess?: (confirmedData?: { name: string; count: number }) => void;
+  existingRsvp?: RsvpRecord | null;
+  onSuccess?: (confirmedData?: RsvpRecord) => void;
+  onDeclineInstead?: (existing?: RsvpRecord) => void;
   onBack: () => void;
-  onOpenCircuitGuide?: () => void;
 }
 
 export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
   initialAttending = true,
+  existingRsvp = null,
   onSuccess,
+  onDeclineInstead,
   onBack,
-  onOpenCircuitGuide,
 }) => {
-  const [guestName, setGuestName] = useState<string>('');
-  const [companions, setCompanions] = useState<{ id: string; name: string }[]>([]);
+  const [guestName, setGuestName] = useState<string>(existingRsvp ? existingRsvp.guest_name : '');
+  const [companions, setCompanions] = useState<{ id: string; name: string }[]>(() => {
+    if (existingRsvp && Array.isArray(existingRsvp.companions) && existingRsvp.companions.length > 0) {
+      return existingRsvp.companions.map((c) => ({ id: c.id, name: c.fullName }));
+    }
+    return [];
+  });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [confirmedRecord, setConfirmedRecord] = useState<RsvpRecord | null>(existingRsvp || null);
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const mapInfo = getDeviceNavigationMapUrl();
 
   // Close on Escape key press
   useEffect(() => {
@@ -40,7 +62,7 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
     setCompanions([
       ...companions,
       {
-        id: crypto.randomUUID ? crypto.randomUUID() : `comp-${Date.now()}-${Math.random()}`,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `comp-${Date.now()}-${Math.random()}`,
         name: '',
       },
     ]);
@@ -58,13 +80,13 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
     try {
       const colors = ['#E10600', '#FFB800', '#00D2BE', '#FFFFFF'];
       confetti({
-        particleCount: 90,
-        spread: 80,
+        particleCount: 80,
+        spread: 75,
         origin: { y: 0.5 },
         colors,
       });
     } catch {
-      // Fallback
+      // Ignore if canvas confetti is not supported
     }
   };
 
@@ -90,35 +112,59 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
 
       const totalHeadcount = 1 + formattedCompanions.length;
 
-      await rsvpService.submitRsvp({
-        guest_name: guestName.trim(),
-        relationship: 'Guest',
-        attending: initialAttending,
-        companions: formattedCompanions,
-        total_headcount: totalHeadcount,
-        message: '',
-      });
+      let resultRecord: RsvpRecord | null = null;
 
-      triggerF1Confetti();
+      if (existingRsvp && existingRsvp.id) {
+        // Update existing record
+        const res = await rsvpService.updateRsvp(existingRsvp.id, {
+          guest_name: guestName.trim(),
+          attending: true,
+          companions: formattedCompanions,
+          total_headcount: totalHeadcount,
+        });
+        resultRecord = res.data || {
+          ...existingRsvp,
+          guest_name: guestName.trim(),
+          attending: true,
+          companions: formattedCompanions,
+          total_headcount: totalHeadcount,
+        };
+      } else {
+        // Create new record
+        const res = await rsvpService.submitRsvp({
+          guest_name: guestName.trim(),
+          relationship: 'Guest',
+          attending: initialAttending,
+          companions: formattedCompanions,
+          total_headcount: totalHeadcount,
+          message: '',
+        });
+        resultRecord = res.data || null;
+      }
+
       setIsSubmitting(false);
       setIsSubmitted(true);
-      onSuccess?.({ name: guestName.trim(), count: totalHeadcount });
+      setConfirmedRecord(resultRecord);
+      triggerF1Confetti();
+
+      if (onSuccess && resultRecord) {
+        onSuccess(resultRecord);
+      }
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
-      setErrorMsg('Failed to save RSVP. Please retry.');
+      setErrorMsg('An error occurred while confirming your RSVP. Please try again.');
     }
   };
 
   return (
     <div
       onClick={(e) => {
-        // Close modal when tapping the backdrop
         if (e.target === e.currentTarget) {
           onBack();
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -128,10 +174,10 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
         className="w-full max-w-lg my-auto double-bezel shadow-2xl relative"
       >
         <div className="double-bezel-inner p-5 sm:p-7 max-h-[90vh] overflow-y-auto custom-scrollbar">
-          {/* Top Red Kerb Inlay */}
+          {/* Top Red-and-White Kerb Metallic Inlay */}
           <div className="absolute top-0 left-0 right-0 h-1.5 kerb-inlay-h" />
 
-          {/* Close 'X' Button at top-right */}
+          {/* Close 'X' Button */}
           <button
             onClick={onBack}
             className="absolute top-3.5 right-3.5 p-2 rounded-full text-[#8E8E98] hover:text-white bg-white/5 hover:bg-white/10 transition-colors cursor-pointer z-10"
@@ -148,96 +194,85 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between mb-5 pt-1 pr-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4 pt-1 pr-8">
                   <div>
                     <h2 className="font-f1-head text-lg sm:text-xl font-black text-white uppercase italic">
-                      CONFIRM GRID SLOT
+                      {existingRsvp ? 'MODIFY YOUR RSVP' : 'CONFIRM YOUR ATTENDANCE'}
                     </h2>
-                    <p className="text-xs text-[#8E8E98] font-telemetry mt-0.5">
-                      Guest Registration • {EVENT_CONFIG.celebrantName}'s 7th GP
+                    <p className="font-telemetry text-xs text-[#8E8E98] mt-0.5">
+                      {existingRsvp ? 'Update your name or guest accompanies below' : 'Mattheu Amari’s 7th Birthday Grand Prix'}
                     </p>
                   </div>
                   <M7Logo size="sm" showSubtitle={false} animated={false} />
                 </div>
 
-                {errorMsg && (
-                  <div className="mb-4 p-3 bg-[#E10600]/15 border border-[#E10600]/50 rounded-xl text-xs font-telemetry text-[#FF5E5B]">
-                    {errorMsg}
-                  </div>
-                )}
-
+                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Field 1: Guest Name */}
+                  {errorMsg && (
+                    <div className="p-3 bg-[#E10600]/15 border border-[#E10600] rounded-xl text-[#FF5E5B] text-xs font-telemetry">
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  {/* Primary Guest Name Input */}
                   <div>
-                    <label className="block text-xs font-telemetry uppercase text-[#8E8E98] tracking-wider mb-1.5 font-bold flex items-center gap-1.5">
-                      <User size={14} className="text-[#00D2BE]" />
-                      YOUR NAME *
+                    <label className="block text-xs font-telemetry text-[#8E8E98] uppercase tracking-wider mb-1.5">
+                      Your Full Name <span className="text-[#E10600]">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Enter your full name"
-                      className="w-full px-3.5 py-2.5 sm:py-3 bg-[#111118] border border-white/15 focus:border-[#00D2BE] focus:ring-1 focus:ring-[#00D2BE] rounded-xl text-white font-telemetry text-sm placeholder-[#555566] outline-none transition-all"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="e.g. John Doe"
+                        className="w-full px-4 py-2.5 pl-10 bg-[#12121A] border border-white/15 focus:border-[#00D2BE] rounded-xl text-white font-telemetry text-sm outline-none placeholder-[#555566] transition-colors"
+                        autoFocus
+                      />
+                      <User size={16} className="absolute left-3.5 top-3 text-[#8E8E98]" />
+                    </div>
                   </div>
 
-                  {/* Field 2: Accompanies (If Any) */}
+                  {/* Accompanying Guests */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-telemetry uppercase text-[#8E8E98] tracking-wider font-bold flex items-center gap-1.5">
-                        <Users size={14} className="text-[#FFB800]" />
-                        ACCOMPANIES (OPTIONAL)
+                      <label className="text-xs font-telemetry text-[#8E8E98] uppercase tracking-wider flex items-center gap-1.5">
+                        <Users size={14} className="text-[#00D2BE]" />
+                        <span>Accompanying With You (+1s)</span>
                       </label>
-                      {companions.length > 0 && (
-                        <span className="text-[11px] font-telemetry text-[#00D2BE]">
-                          +{companions.length} companion{companions.length > 1 ? 's' : ''}
-                        </span>
-                      )}
+                      <span className="text-[11px] font-telemetry text-[#00D2BE]">
+                        {companions.filter((c) => c.name.trim()).length} Added
+                      </span>
                     </div>
 
-                    {/* Animated List of Companions */}
-                    <div className="space-y-2">
-                      <AnimatePresence>
-                        {companions.map((comp, idx) => (
-                          <motion.div
-                            key={comp.id}
-                            layout
-                            initial={{ opacity: 0, height: 0, y: -6 }}
-                            animate={{ opacity: 1, height: 'auto', y: 0 }}
-                            exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex items-center gap-2"
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {companions.map((comp, idx) => (
+                        <div key={comp.id} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={comp.name}
+                            onChange={(e) => handleUpdateCompanion(comp.id, e.target.value)}
+                            placeholder={`Companion #${idx + 1} Name`}
+                            className="flex-1 px-3 py-2 bg-[#12121A] border border-white/10 focus:border-[#00D2BE] rounded-lg text-white font-telemetry text-xs outline-none placeholder-[#555566]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCompanion(comp.id)}
+                            className="p-2 text-[#8E8E98] hover:text-[#E10600] bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                            title="Remove companion"
                           >
-                            <input
-                              type="text"
-                              value={comp.name}
-                              onChange={(e) => handleUpdateCompanion(comp.id, e.target.value)}
-                              placeholder={`Accompany #${idx + 1} Name`}
-                              className="flex-1 px-3.5 py-2 bg-[#111118] border border-white/10 focus:border-[#FFB800] rounded-xl text-white font-telemetry text-sm placeholder-[#555566] outline-none transition-all"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCompanion(comp.id)}
-                              className="p-2 text-[#8E8E98] hover:text-[#FF5E5B] bg-[#171722] hover:bg-[#281515] border border-white/5 rounded-xl transition-colors cursor-pointer shrink-0"
-                              title="Remove"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
 
                       <button
                         type="button"
                         onClick={handleAddCompanion}
-                        className="w-full py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-dashed border-white/20 rounded-xl text-xs font-telemetry font-bold text-[#00D2BE] flex items-center justify-center gap-2 transition-colors cursor-pointer mt-1"
+                        className="w-full py-2.5 px-3 border border-dashed border-white/20 hover:border-[#00D2BE]/60 text-xs font-telemetry text-[#8E8E98] hover:text-white rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white/[0.02] hover:bg-white/[0.05]"
                       >
-                        <Plus size={14} />
-                        <span>ADD ACCOMPANY</span>
+                        <Plus size={14} className="text-[#00D2BE]" />
+                        <span>ADD ACCOMPANYING GUEST</span>
                       </button>
                     </div>
                   </div>
@@ -249,10 +284,23 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
                       disabled={isSubmitting}
                       className="group w-full py-3.5 px-6 btn-f1-primary rounded-full font-f1-head font-black tracking-widest text-sm uppercase text-white flex items-center justify-center gap-3 cursor-pointer shadow-lg border border-white/20 transition-all disabled:opacity-50"
                     >
-                      <span>{isSubmitting ? 'SAVING...' : 'CONFIRM RSVP'}</span>
+                      <span>{isSubmitting ? 'SAVING DETAILS...' : existingRsvp ? 'SAVE UPDATED RSVP' : 'CONFIRM RSVP'}</span>
                       <CheckCircle2 size={17} className="text-white" />
                     </button>
                   </div>
+
+                  {/* Option to change mind and decline if already had an RSVP */}
+                  {existingRsvp && onDeclineInstead && (
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={() => onDeclineInstead(existingRsvp)}
+                        className="text-xs font-telemetry text-[#FF5E5B] hover:underline cursor-pointer"
+                      >
+                        Change your mind? Click here to decline
+                      </button>
+                    </div>
+                  )}
                 </form>
               </motion.div>
             ) : (
@@ -271,42 +319,90 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
                   GRID SLOT CONFIRMED!
                 </h3>
 
-                <p className="font-telemetry text-xs sm:text-sm text-[#00D2BE] font-bold tracking-wider uppercase mt-1 mb-3">
+                <p className="font-telemetry text-xs sm:text-sm text-[#00D2BE] font-bold tracking-wider uppercase mt-1 mb-4">
                   PADDOCK PASS ACTIVE // SPEC-M7
                 </p>
 
-                {/* VIP Pass Summary Card */}
-                <div className="w-full bg-[#12121A] border border-white/10 rounded-2xl p-4 text-left font-telemetry mb-5 space-y-1.5">
+                {/* Confirmed Details Summary Card */}
+                <div className="w-full bg-[#12121A] border border-white/10 rounded-2xl p-4 text-left font-telemetry mb-5 space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#8E8E98] uppercase">DRIVER:</span>
+                    <span className="text-[#8E8E98] uppercase">PRIMARY DRIVER:</span>
                     <span className="text-white font-bold">{guestName}</span>
                   </div>
+
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#8E8E98] uppercase">ACCOMPANIES:</span>
                     <span className="text-[#FFB800] font-bold">
                       +{companions.filter((c) => c.name.trim()).length}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-t border-white/5 pt-1.5">
+
+                  {companions.filter((c) => c.name.trim()).length > 0 && (
+                    <div className="pt-1 border-t border-white/5">
+                      <span className="text-[10px] text-[#8E8E98] uppercase block mb-1">Names:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {companions
+                          .filter((c) => c.name.trim())
+                          .map((c, i) => (
+                            <span
+                              key={c.id || i}
+                              className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-[#E1E1F0]"
+                            >
+                              {c.name}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
                     <span className="text-[#8E8E98] uppercase">TOTAL PASSES:</span>
                     <span className="text-[#00D2BE] font-bold">
                       {1 + companions.filter((c) => c.name.trim()).length} VIP Passes
                     </span>
                   </div>
+
+                  <div className="flex justify-between items-center text-xs border-t border-white/5 pt-1.5">
+                    <span className="text-[#8E8E98] uppercase">VENUE:</span>
+                    <span className="text-white font-bold">{EVENT_CONFIG.venueName}</span>
+                  </div>
                 </div>
 
+                {/* Action Buttons: Native Phone Map Redirect & Modify/Decline */}
                 <div className="w-full flex flex-col gap-2.5">
-                  {onOpenCircuitGuide && (
+                  {/* Native Phone Map Redirect Button (Apple Maps on iOS, Google Maps on Android/Other) */}
+                  <a
+                    href={mapInfo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3.5 px-5 rounded-full bg-[#00D2BE] hover:bg-[#20ebd7] text-[#0E0E14] font-telemetry font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,210,190,0.45)] transition-all cursor-pointer"
+                  >
+                    <Navigation size={16} />
+                    <span>NAVIGATE IN {mapInfo.appName.toUpperCase()}</span>
+                    <ExternalLink size={13} className="opacity-70" />
+                  </a>
+
+                  {/* Modify Details Button */}
+                  <button
+                    onClick={() => setIsSubmitted(false)}
+                    className="w-full py-2.5 px-5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 font-telemetry font-bold text-xs uppercase tracking-wider text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Edit3 size={14} className="text-[#FFB800]" />
+                    <span>MODIFY DETAILS</span>
+                  </button>
+
+                  {/* Change mind / Can't attend button */}
+                  {onDeclineInstead && confirmedRecord && (
                     <button
-                      onClick={onOpenCircuitGuide}
-                      className="w-full py-3 px-5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 font-telemetry font-bold text-xs uppercase tracking-wider text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      onClick={() => onDeclineInstead(confirmedRecord)}
+                      className="w-full py-2 text-xs font-telemetry text-[#FF5E5B] hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Compass size={15} className="text-[#00D2BE]" />
-                      <span>EXPLORE 3D CIRCUIT GUIDE</span>
-                      <ArrowRight size={14} className="text-white/60" />
+                      <XCircle size={13} />
+                      <span>Can't go anymore? Change mind to decline</span>
                     </button>
                   )}
 
+                  {/* Return to invitation */}
                   <button
                     onClick={onBack}
                     className="w-full py-3 px-6 btn-f1-primary rounded-full font-f1-head font-black tracking-widest text-xs sm:text-sm uppercase text-white cursor-pointer shadow-lg border border-white/20 transition-all"

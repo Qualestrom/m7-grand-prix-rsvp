@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageSquareHeart, Send, CheckCircle2, User } from 'lucide-react';
-import { rsvpService } from '../services/rsvpService';
+import { rsvpService, type RsvpRecord } from '../services/rsvpService';
 import { M7Logo } from './M7Logo';
-import { EVENT_CONFIG } from '../config/eventConfig';
 
 interface DeclineMessageProps {
+  existingRsvp?: RsvpRecord | null;
+  onSuccess?: (record?: RsvpRecord) => void;
   onBack: () => void;
+  onReRegister?: () => void;
 }
 
-export const DeclineMessage: React.FC<DeclineMessageProps> = ({ onBack }) => {
-  const [name, setName] = useState('');
-  const [message, setMessage] = useState('');
+export const DeclineMessage: React.FC<DeclineMessageProps> = ({
+  existingRsvp = null,
+  onSuccess,
+  onBack,
+  onReRegister,
+}) => {
+  const [name, setName] = useState(existingRsvp ? existingRsvp.guest_name : '');
+  const [message, setMessage] = useState(existingRsvp?.message || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -38,17 +45,44 @@ export const DeclineMessage: React.FC<DeclineMessageProps> = ({ onBack }) => {
     setErrorMsg('');
 
     try {
-      await rsvpService.submitRsvp({
-        guest_name: name.trim(),
-        relationship: 'Guest',
-        attending: false,
-        companions: [],
-        total_headcount: 0,
-        message: message.trim(),
-      });
+      let updatedRecord: RsvpRecord | null = null;
+
+      if (existingRsvp && existingRsvp.id) {
+        // Update existing RSVP to attending = false
+        const res = await rsvpService.updateRsvp(existingRsvp.id, {
+          guest_name: name.trim(),
+          attending: false,
+          total_headcount: 0,
+          companions: [],
+          message: message.trim(),
+        });
+        updatedRecord = res.data || {
+          ...existingRsvp,
+          guest_name: name.trim(),
+          attending: false,
+          total_headcount: 0,
+          companions: [],
+          message: message.trim(),
+        };
+      } else {
+        // New DNF RSVP
+        const res = await rsvpService.submitRsvp({
+          guest_name: name.trim(),
+          relationship: 'Guest',
+          attending: false,
+          companions: [],
+          total_headcount: 0,
+          message: message.trim(),
+        });
+        updatedRecord = res.data || null;
+      }
 
       setIsSubmitting(false);
       setIsSubmitted(true);
+
+      if (onSuccess && updatedRecord) {
+        onSuccess(updatedRecord);
+      }
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
@@ -63,7 +97,7 @@ export const DeclineMessage: React.FC<DeclineMessageProps> = ({ onBack }) => {
           onBack();
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -97,109 +131,107 @@ export const DeclineMessage: React.FC<DeclineMessageProps> = ({ onBack }) => {
                 <div className="flex items-center justify-between mb-4 pt-1 pr-8">
                   <div>
                     <h2 className="font-f1-head text-lg sm:text-xl font-black text-white uppercase italic">
-                      LEAVE A MESSAGE
+                      {existingRsvp ? 'CANNOT MAKE IT TO THE PARTY' : 'LEAVE A BIRTHDAY MESSAGE'}
                     </h2>
-                    <p className="text-xs text-[#8E8E98] font-telemetry mt-0.5">
-                      We will miss you on the grid!
+                    <p className="font-telemetry text-xs text-[#8E8E98] mt-0.5">
+                      {existingRsvp
+                        ? 'We will miss you on the grid! Send Mattheu a birthday wish'
+                        : 'Send Mattheu Amari your warm wishes for his 7th Birthday'}
                     </p>
                   </div>
                   <M7Logo size="sm" showSubtitle={false} animated={false} />
                 </div>
 
-                {/* Broadcast Banner */}
-                <div className="mb-4 p-3.5 bg-[#14141E] border border-white/10 rounded-2xl flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#E10600]/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <MessageSquareHeart size={16} className="text-[#FF1801]" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-f1-head text-xs font-bold text-white uppercase tracking-wider">
-                      BIRTHDAY BROADCAST
-                    </h3>
-                    <p className="font-telemetry text-[11px] text-[#A0A0B0] mt-0.5 leading-relaxed">
-                      Leave a birthday wish for {EVENT_CONFIG.celebrantName}! Your message will be displayed on the screen during his 7th Birthday Grand Prix!
-                    </p>
-                  </div>
-                </div>
-
-                {errorMsg && (
-                  <div className="mb-4 p-3 bg-[#E10600]/15 border border-[#E10600]/50 rounded-xl text-xs font-telemetry text-[#FF5E5B]">
-                    {errorMsg}
-                  </div>
-                )}
-
+                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {errorMsg && (
+                    <div className="p-3 bg-[#E10600]/15 border border-[#E10600] rounded-xl text-[#FF5E5B] text-xs font-telemetry">
+                      {errorMsg}
+                    </div>
+                  )}
+
                   {/* Name Input */}
                   <div>
-                    <label className="block text-xs font-telemetry uppercase text-[#8E8E98] tracking-wider mb-1.5 font-bold flex items-center gap-1.5">
-                      <User size={14} className="text-[#00D2BE]" />
-                      YOUR NAME *
+                    <label className="block text-xs font-telemetry text-[#8E8E98] uppercase tracking-wider mb-1.5">
+                      Your Full Name <span className="text-[#E10600]">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your name (e.g. Uncle Alex, Cousin Leo)"
-                      className="w-full px-3.5 py-2.5 sm:py-3 bg-[#111118] border border-white/15 focus:border-[#00D2BE] focus:ring-1 focus:ring-[#00D2BE] rounded-xl text-white font-telemetry text-sm placeholder-[#555566] outline-none transition-all"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Aunt Sarah"
+                        className="w-full px-4 py-2.5 pl-10 bg-[#12121A] border border-white/15 focus:border-[#00D2BE] rounded-xl text-white font-telemetry text-sm outline-none placeholder-[#555566] transition-colors"
+                        autoFocus={!name}
+                      />
+                      <User size={16} className="absolute left-3.5 top-3 text-[#8E8E98]" />
+                    </div>
                   </div>
 
-                  {/* Message Textarea */}
+                  {/* Message Input */}
                   <div>
-                    <label className="block text-xs font-telemetry uppercase text-[#8E8E98] tracking-wider mb-1.5 font-bold flex items-center gap-1.5">
-                      <MessageSquareHeart size={14} className="text-[#FF1801]" />
-                      YOUR BIRTHDAY MESSAGE
+                    <label className="block text-xs font-telemetry text-[#8E8E98] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <MessageSquareHeart size={14} className="text-[#FF5E5B]" />
+                      <span>Birthday Pit Radio Message (Optional)</span>
                     </label>
                     <textarea
-                      rows={3}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder={`Write your birthday wish for ${EVENT_CONFIG.celebrantName}...`}
-                      className="w-full px-3.5 py-2.5 sm:py-3 bg-[#111118] border border-white/15 focus:border-[#FF1801] focus:ring-1 focus:ring-[#FF1801] rounded-xl text-white font-telemetry text-sm placeholder-[#555566] outline-none transition-all resize-none"
+                      placeholder={`Happy 7th Birthday Mattheu! Wish we could be there to race with you!`}
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-[#12121A] border border-white/15 focus:border-[#00D2BE] rounded-xl text-white font-telemetry text-sm outline-none placeholder-[#555566] transition-colors resize-none"
                     />
                   </div>
 
                   {/* Submit Button */}
-                  <div className="pt-1">
+                  <div className="pt-2">
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="group w-full py-3.5 px-6 btn-f1-primary rounded-full font-f1-head font-black tracking-widest text-sm uppercase text-white flex items-center justify-center gap-3 cursor-pointer shadow-lg border border-white/20 transition-all disabled:opacity-50"
+                      className="w-full py-3.5 px-6 rounded-full font-f1-head font-black tracking-widest text-sm uppercase text-white flex items-center justify-center gap-2 cursor-pointer shadow-lg border border-white/20 transition-all bg-[#1F1F2C] hover:bg-[#2B2B3D] disabled:opacity-50"
                     >
-                      <span>
-                        {isSubmitting ? 'TRANSMITTING MESSAGE...' : 'SEND BIRTHDAY WISH'}
-                      </span>
-                      <Send size={15} className="text-white group-hover:translate-x-1 transition-transform" />
+                      <Send size={15} />
+                      <span>{isSubmitting ? 'SENDING...' : existingRsvp ? 'UPDATE TO CANNOT ATTEND' : 'SEND MESSAGE'}</span>
                     </button>
                   </div>
                 </form>
               </motion.div>
             ) : (
               <motion.div
-                key="success"
+                key="submitted"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="py-4 flex flex-col items-center text-center"
               >
-                <div className="w-14 h-14 rounded-full bg-[#00D2BE]/20 border border-[#00D2BE]/40 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mb-3">
                   <CheckCircle2 size={28} className="text-[#00D2BE]" />
                 </div>
 
-                <h3 className="font-f1-head text-xl sm:text-2xl font-black text-white uppercase italic mb-1.5">
+                <h3 className="font-f1-head text-xl font-black text-white uppercase italic">
                   MESSAGE TRANSMITTED!
                 </h3>
 
-                <p className="font-telemetry text-xs text-[#A0A0B0] max-w-sm leading-relaxed mb-6">
-                  Thank you, <span className="text-white font-bold">{name}</span>! Your birthday message has been received and will be broadcasted during {EVENT_CONFIG.celebrantName}'s 7th Birthday Grand Prix!
+                <p className="font-telemetry text-xs sm:text-sm text-[#8E8E98] mt-1 mb-5">
+                  Thank you, <span className="text-white font-bold">{name}</span>. Your message has been beamed to Mattheu’s pit crew!
                 </p>
 
-                <button
-                  onClick={onBack}
-                  className="w-full py-3 px-6 btn-f1-primary rounded-full font-f1-head font-black tracking-widest text-xs sm:text-sm uppercase text-white transition-all cursor-pointer shadow-lg border border-white/20"
-                >
-                  RETURN TO INVITATION
-                </button>
+                <div className="w-full flex flex-col gap-2.5">
+                  {onReRegister && (
+                    <button
+                      onClick={onReRegister}
+                      className="w-full py-3 px-6 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 font-telemetry font-bold text-xs uppercase tracking-wider text-white transition-all cursor-pointer"
+                    >
+                      CHANGED YOUR MIND? JOIN THE GRID
+                    </button>
+                  )}
+
+                  <button
+                    onClick={onBack}
+                    className="w-full py-3 px-6 btn-f1-primary rounded-full font-f1-head font-black tracking-widest text-xs sm:text-sm uppercase text-white cursor-pointer shadow-lg border border-white/20 transition-all"
+                  >
+                    BACK TO INVITATION
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

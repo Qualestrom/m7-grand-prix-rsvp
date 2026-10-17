@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.rsvps (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     guest_name TEXT NOT NULL,
-    relationship TEXT NOT NULL,
+    relationship TEXT NOT NULL DEFAULT 'Guest',
     attending BOOLEAN NOT NULL DEFAULT true,
     companions JSONB NOT NULL DEFAULT '[]'::jsonb,
     total_headcount INTEGER NOT NULL DEFAULT 1,
@@ -18,20 +18,39 @@ CREATE TABLE IF NOT EXISTS public.rsvps (
 -- 2. Enable Row Level Security
 ALTER TABLE public.rsvps ENABLE ROW LEVEL SECURITY;
 
--- 3. Policy: Allow anyone (guests) to insert their RSVP
+-- 3. Policy: Allow inserting RSVPs (public guests & admin)
+DROP POLICY IF EXISTS "Allow public RSVP submission" ON public.rsvps;
 CREATE POLICY "Allow public RSVP submission" 
 ON public.rsvps 
 FOR INSERT 
 TO anon, authenticated
 WITH CHECK (true);
 
--- 4. Policy: Allow reading of RSVPs for live Pit Wall telemetry & Admin
+-- 4. Policy: Allow reading RSVPs for telemetry & Pit Wall Admin
+DROP POLICY IF EXISTS "Allow public read for telemetry" ON public.rsvps;
 CREATE POLICY "Allow public read for telemetry" 
 ON public.rsvps 
 FOR SELECT 
 TO anon, authenticated
 USING (true);
 
--- 5. Optional Index for fast sorting on Pit Wall
+-- 5. Policy: Allow updating RSVPs (guests modifying details or admin updating)
+DROP POLICY IF EXISTS "Allow public update for RSVPs" ON public.rsvps;
+CREATE POLICY "Allow public update for RSVPs" 
+ON public.rsvps 
+FOR UPDATE 
+TO anon, authenticated
+USING (true)
+WITH CHECK (true);
+
+-- 6. Policy: Allow deleting RSVPs (admin removing records)
+DROP POLICY IF EXISTS "Allow public delete for RSVPs" ON public.rsvps;
+CREATE POLICY "Allow public delete for RSVPs" 
+ON public.rsvps 
+FOR DELETE 
+TO anon, authenticated
+USING (true);
+
+-- 7. Indexes for fast sorting and querying on Pit Wall
 CREATE INDEX IF NOT EXISTS idx_rsvps_created_at ON public.rsvps (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rsvps_attending ON public.rsvps (attending);
