@@ -6,6 +6,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { VENUE_ROUTES } from '../../config/routesConfig';
 import { RouteRoad3D } from './RouteRoad3D';
 import { LandmarkMarker3D } from './LandmarkMarker3D';
+import { LandmarkBuildings3D } from './LandmarkBuildings3D';
 import { M7Car } from './M7Car';
 import { RouteCameraRig } from './RouteCameraRig';
 import { RouteTelemetryHUD } from './RouteTelemetryHUD';
@@ -109,11 +110,18 @@ export const CircuitGuide3D: React.FC<CircuitGuide3DProps> = ({ onBack }) => {
           />
           <pointLight position={[0, 30, 0]} intensity={25} color="#00D2BE" distance={150} />
 
-          {/* 3D Road Mesh for Active Route */}
-          <RouteRoad3D curve={curve} accentColor={activeRoute.color} />
+          {/* 3D Road Mesh for Active Route with Real-World Map Intersections */}
+          <RouteRoad3D
+            curve={curve}
+            accentColor={activeRoute.color}
+            intersections={activeRoute.intersections}
+          />
 
           {/* 3D Overhead Gantries & Waypoint Beacons */}
           <LandmarkMarker3D landmarks={activeRoute.landmarks} curve={curve} />
+
+          {/* 3D Authentic Landmark Buildings & Structures */}
+          <LandmarkBuildings3D landmarks={activeRoute.landmarks} curve={curve} />
 
           {/* M7 Formula 1 Car moving along the route spline */}
           <M7Car curve={curve} progress={progress} />

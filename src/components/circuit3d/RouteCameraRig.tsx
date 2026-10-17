@@ -27,24 +27,28 @@ export const RouteCameraRig: React.FC<RouteCameraRigProps> = ({
     const up = new THREE.Vector3(0, 1, 0);
     const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
 
-    // Default Chase Camera Offset (Behind and slightly elevated)
+    // Default Chase Camera Offset (Behind and elevated for great situational awareness)
     let cameraOffset = tangent.clone().multiplyScalar(-14).add(new THREE.Vector3(0, 6.2, 0));
     let lookTarget = carPos.clone().add(tangent.clone().multiplyScalar(10));
 
     // When near a landmark in Slow-Motion:
-    // Pivot camera outward and lower slightly to create a dramatic side/three-quarter hero shot
+    // Pivot camera outward and elevate to create an expansive hero shot of both car and landmark
     if (isSlowMo && activeLandmark) {
+      // Step to opposite side of landmark to get a clean view of the building
+      const lateralBias =
+        activeLandmark.side === 'right' ? -4.5 : activeLandmark.side === 'left' ? 4.5 : 0;
+
       cameraOffset = tangent
         .clone()
-        .multiplyScalar(-10)
-        .add(right.clone().multiplyScalar(5.5))
-        .add(new THREE.Vector3(0, 4.5, 0));
+        .multiplyScalar(-11)
+        .add(right.clone().multiplyScalar(lateralBias))
+        .add(new THREE.Vector3(0, 5.8, 0));
 
-      // Look between the car and the elevated landmark sign
+      // Look toward the car and elevated landmark
       lookTarget = carPos
         .clone()
-        .add(tangent.clone().multiplyScalar(4))
-        .add(new THREE.Vector3(0, 2.5, 0));
+        .add(tangent.clone().multiplyScalar(4.5))
+        .add(new THREE.Vector3(0, 2.6, 0));
     }
 
     const targetCameraPos = carPos.clone().add(cameraOffset);
