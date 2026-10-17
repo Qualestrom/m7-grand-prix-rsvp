@@ -52,9 +52,9 @@ export const EVENT_CONFIG: EventConfig = {
   time: "2:00 PM",
   lightsOutTime: "2:00 PM",
   venueName: "JSH Events Place",
-  venueAddress: "Santa Rosa, Laguna",
-  googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=JSH+Events+Place+Santa+Rosa+Laguna",
-  wazeUrl: "https://waze.com/ul?q=JSH%20Events%20Place%20Santa%20Rosa%20Laguna",
+  venueAddress: "B5 L27 St John Subdivision, City of Santa Rosa, 4026 Laguna",
+  googleMapsUrl: "https://www.google.com/maps/dir/?api=1&destination=14.3152787,121.1187379&destination_place_id=ChIJE41NbBXZlzMRdtuGqiWPE_s&query=JSH+Events+Place+Santa+Rosa",
+  wazeUrl: "https://www.waze.com/live-map/directions/ph/calabarzon/city-of-santa-rosa/jsh-events-place?to=place.ChIJE41NbBXZlzMRdtuGqiWPE_s",
   adminPasscode: "M7PITWALL",
   weather: {
     condition: "Sunny & High Octane",
