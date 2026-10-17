@@ -2,15 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TelemetryLoader } from './components/TelemetryLoader';
 import { PaddockPass } from './components/PaddockPass';
-import { DriverRegistration } from './components/DriverRegistration';
-import { DeclineMessage } from './components/DeclineMessage';
 import { CircuitGuide3D } from './components/circuit3d/CircuitGuide3D';
 import { PitWallAdmin } from './components/PitWallAdmin';
-
 import { DramaticIntro } from './components/DramaticIntro';
 import { AudioController } from './components/AudioController';
 
-type ScreenState = 'loader' | 'dramatic-intro' | 'briefing' | 'registration-attending' | 'registration-dnf' | 'circuit-guide' | 'admin';
+type ScreenState = 'loader' | 'dramatic-intro' | 'briefing' | 'circuit-guide' | 'admin';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>(() => {
@@ -124,37 +121,8 @@ function App() {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <PaddockPass
-              onConfirmGridSlot={() => setCurrentScreen('registration-attending')}
-              onBoxDnf={() => setCurrentScreen('registration-dnf')}
+              onOpenCircuitGuide={() => setCurrentScreen('circuit-guide')}
             />
-          </motion.div>
-        )}
-
-        {currentScreen === 'registration-attending' && (
-          <motion.div
-            key="registration-attending"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -14 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <DriverRegistration
-              initialAttending={true}
-              onSuccess={() => setCurrentScreen('circuit-guide')}
-              onBack={() => setCurrentScreen('briefing')}
-            />
-          </motion.div>
-        )}
-
-        {currentScreen === 'registration-dnf' && (
-          <motion.div
-            key="registration-dnf"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -14 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <DeclineMessage onBack={() => setCurrentScreen('briefing')} />
           </motion.div>
         )}
 
