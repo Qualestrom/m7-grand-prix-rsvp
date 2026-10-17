@@ -27,3 +27,8 @@ dist-ssr
 .agent/
 .agents/
 AGENTS.md
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
