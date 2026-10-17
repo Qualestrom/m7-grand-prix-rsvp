@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '../config/supabaseConfig';
 
 export interface Companion {
   id: string;
@@ -35,14 +36,15 @@ class RsvpService {
 
   // Initialize or re-initialize Supabase client
   public initSupabase(): boolean {
-    const envUrl = import.meta.env.VITE_SUPABASE_URL;
-    const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const envUrl = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_URL : undefined;
+    const envKey = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined;
 
     const customUrl = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_URL_KEY) : null;
     const customKey = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_KEY_KEY) : null;
 
-    const supabaseUrl = customUrl || envUrl;
-    const supabaseKey = customKey || envKey;
+    // Hierarchy: 1. Custom runtime override in Pit Wall Admin -> 2. Vite .env -> 3. Default project credentials
+    const supabaseUrl = (customUrl && customUrl.startsWith('http')) ? customUrl.trim() : (envUrl && envUrl.startsWith('http')) ? envUrl.trim() : DEFAULT_SUPABASE_URL;
+    const supabaseKey = (customKey && customKey.trim().length > 20) ? customKey.trim() : (envKey && envKey.trim().length > 20) ? envKey.trim() : DEFAULT_SUPABASE_ANON_KEY;
 
     if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
       try {
@@ -71,30 +73,41 @@ class RsvpService {
     if (!url.trim() || !key.trim()) {
       localStorage.removeItem(SUPABASE_CUSTOM_URL_KEY);
       localStorage.removeItem(SUPABASE_CUSTOM_KEY_KEY);
-      this.initSupabase();
-      return false;
+      return this.initSupabase();
     }
 
-    localStorage.setItem(SUPABASE_CUSTOM_URL_KEY, url.trim());
-    localStorage.setItem(SUPABASE_CUSTOM_KEY_KEY, key.trim());
-    return this.initSupabase();
+    try {
+      localStorage.setItem(SUPABASE_CUSTOM_URL_KEY, url.trim());
+      localStorage.setItem(SUPABASE_CUSTOM_KEY_KEY, key.trim());
+      return this.initSupabase();
+    } catch {
+      return false;
+    }
   }
 
-  public getSupabaseConfig(): { url: string; key: string; isCustom: boolean } {
-    const customUrl = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_URL_KEY) || '' : '';
-    const customKey = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_KEY_KEY) || '' : '';
-    const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  public getSupabaseConfig(): { url: string; key: string; isCustom: boolean; isDefault: boolean } {
+    const customUrl = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_URL_KEY) : '';
+    const customKey = typeof localStorage !== 'undefined' ? localStorage.getItem(SUPABASE_CUSTOM_KEY_KEY) : '';
+    const envUrl = (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_URL : '') || '';
+    const envKey = (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_ANON_KEY : '') || '';
+
+    const effectiveUrl = (customUrl && customUrl.startsWith('http')) ? customUrl : (envUrl && envUrl.startsWith('http')) ? envUrl : DEFAULT_SUPABASE_URL;
+    const effectiveKey = (customKey && customKey.length > 20) ? customKey : (envKey && envKey.length > 20) ? envKey : DEFAULT_SUPABASE_ANON_KEY;
 
     return {
-      url: customUrl || envUrl,
-      key: customKey || envKey,
+      url: effectiveUrl,
+      key: effectiveKey,
       isCustom: Boolean(customUrl && customKey),
+      isDefault: !customUrl && !envUrl,
     };
   }
 
   // Test live connection to Supabase
   public async testConnection(): Promise<{ success: boolean; message: string }> {
+    if (!this.supabase) {
+      this.initSupabase();
+    }
+
     if (!this.supabase) {
       return { success: false, message: 'Supabase credentials not configured.' };
     }
@@ -106,40 +119,47 @@ class RsvpService {
         .limit(1);
 
       if (error) {
+        this.isSupabaseConnected = false;
         return { success: false, message: error.message };
       }
 
       this.isSupabaseConnected = true;
-      return { success: true, message: `Connected! Table 'rsvps' verified (${data?.length ?? 0} existing records checked).` };
+      return { success: true, message: `Connected to Supabase! Table 'rsvps' verified (${data?.length ?? 0} existing records checked).` };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Network failure';
+      this.isSupabaseConnected = false;
       return { success: false, message: msg };
+    }
+  }
+
+  // Save record to local storage cache
+  public saveLocalRecord(record: RsvpRecord): void {
+    const local = this.getLocalRecords();
+    const existingIdx = local.findIndex((r) => r.id === record.id || (r.guest_name.toLowerCase() === record.guest_name.toLowerCase() && r.guest_name.trim().length > 0));
+
+    if (existingIdx >= 0) {
+      local[existingIdx] = { ...local[existingIdx], ...record };
+    } else {
+      local.unshift(record);
+    }
+
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(local));
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
     }
   }
 
   // Submit new RSVP
   async submitRsvp(input: RsvpInput): Promise<{ success: boolean; data?: RsvpRecord; error?: string }> {
-    const newRecord: RsvpRecord = {
+    const fallbackRecord: RsvpRecord = {
       ...input,
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `rsvp-${Date.now()}`,
       created_at: new Date().toISOString(),
     };
 
-    // Save locally
-    const local = this.getLocalRecords();
-    const existingIdx = local.findIndex((r) => r.id === newRecord.id || (r.guest_name.toLowerCase() === newRecord.guest_name.toLowerCase() && r.guest_name.trim().length > 0));
-
-    if (existingIdx >= 0) {
-      local[existingIdx] = { ...local[existingIdx], ...newRecord };
-    } else {
-      local.unshift(newRecord);
-    }
-
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(local));
-      this.saveActiveUserRsvp(newRecord);
-    } catch (e) {
-      console.warn('LocalStorage error:', e);
+    if (!this.supabase) {
+      this.initSupabase();
     }
 
     // Insert into Supabase if connected
@@ -161,20 +181,27 @@ class RsvpService {
           .single();
 
         if (error) {
-          console.error('Supabase insert error, saved locally:', error);
-          return { success: true, data: newRecord };
+          console.error('Supabase insert error, saved locally as fallback:', error);
+          this.saveLocalRecord(fallbackRecord);
+          this.saveActiveUserRsvp(fallbackRecord);
+          return { success: true, data: fallbackRecord, error: error.message };
         }
 
         const remoteRecord = data as RsvpRecord;
+        this.saveLocalRecord(remoteRecord);
         this.saveActiveUserRsvp(remoteRecord);
         return { success: true, data: remoteRecord };
       } catch (err: unknown) {
         console.warn('Network error inserting to Supabase, saved locally:', err);
-        return { success: true, data: newRecord };
+        this.saveLocalRecord(fallbackRecord);
+        this.saveActiveUserRsvp(fallbackRecord);
+        return { success: true, data: fallbackRecord };
       }
     }
 
-    return { success: true, data: newRecord };
+    this.saveLocalRecord(fallbackRecord);
+    this.saveActiveUserRsvp(fallbackRecord);
+    return { success: true, data: fallbackRecord };
   }
 
   // Update existing RSVP (from Guest UI or Admin)
@@ -198,6 +225,10 @@ class RsvpService {
     const active = this.getActiveUserRsvp();
     if (active && active.id === id && updatedRecord) {
       this.saveActiveUserRsvp(updatedRecord);
+    }
+
+    if (!this.supabase) {
+      this.initSupabase();
     }
 
     // 2. Update in Supabase
@@ -225,6 +256,7 @@ class RsvpService {
 
         if (data) {
           const remoteRecord = data as RsvpRecord;
+          this.saveLocalRecord(remoteRecord);
           if (active && active.id === id) {
             this.saveActiveUserRsvp(remoteRecord);
           }
@@ -253,6 +285,10 @@ class RsvpService {
       this.clearActiveUserRsvp();
     }
 
+    if (!this.supabase) {
+      this.initSupabase();
+    }
+
     // Remove from Supabase
     if (this.supabase) {
       try {
@@ -274,6 +310,10 @@ class RsvpService {
 
   // Get all RSVPs (Admin Telemetry)
   async getAllRsvps(): Promise<RsvpRecord[]> {
+    if (!this.supabase) {
+      this.initSupabase();
+    }
+
     if (this.supabase) {
       try {
         const { data, error } = await this.supabase
@@ -329,6 +369,9 @@ class RsvpService {
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       localStorage.removeItem(USER_ACTIVE_RSVP_KEY);
+      localStorage.removeItem(SUPABASE_CUSTOM_URL_KEY);
+      localStorage.removeItem(SUPABASE_CUSTOM_KEY_KEY);
+      this.initSupabase();
     } catch {
       // Ignore
     }
