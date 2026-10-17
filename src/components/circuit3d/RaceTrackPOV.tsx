@@ -1,15 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * RaceTrackPOV: High-Octane Formula 1 Low-Angle Cinematic Onboard Engine
+ * RaceTrackPOV: Authentic Formula 1 Broadcast Onboard Engine
  * Built strictly according to the @f1-cinematic-visuals skill directives:
  * - Ultra-low tarmac camera perspective (horizon ~0.24 screen height)
- * - Large, commanding, muscular aerodynamic Formula 1 cars (responsive for mobile & desktop)
- * - Sculpted F1 aero: Carbon composite rear wings, DRS actuators, carbon suspension wishbones,
- *   3D wide Pirelli slicks with camber tilt, Coke-bottle sidepods, diffuser venturi tunnels,
- *   pulsing central FIA rain LEDs, and downshift turbo exhaust flames
- * - Bulletproof Canvas rendering (all radii strictly sanitized with Math.max(0.1, Math.abs(...)))
- * - Mobile-optimized layout: Responsive car scaling, telemetry HUD, and track width
+ * - Authentic 2024/2026 Formula 1 car architecture:
+ *   * Dual-tier swept carbon rear wing with functional DRS slot & beam wing
+ *   * F1 T-Cam broadcast pod & triangular airbox intake
+ *   * Dual aerodynamic wing mirrors on left & right stalks
+ *   * Titanium Halo safety ring & driver helmet with iridium visor
+ *   * Coke-bottle sculpted sidepods with horizontal tops, cooling louvres & carbon floor edges
+ *   * 18-inch 405mm Pirelli P-Zero rear slick tires with camber tilt & wheel aero deflector vanes
+ *   * Multi-element double-wishbone suspension rods
+ *   * Venturi diffuser with 4 vertical strakes, central titanium exhaust & pulsing FIA rain light
+ * - Physical Collision-Free Overtaking Engine:
+ *   * Cars CANNOT phase through each other
+ *   * The attacking car drafts in slipstream, then MUST move laterally into open track space
+ *   * Strict minimum lateral clearance enforced: wheels and chassis NEVER overlap
+ *   * Authentic wheel-to-wheel side-by-side battle before completing the pass
  */
 export const RaceTrackPOV: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -31,12 +39,12 @@ export const RaceTrackPOV: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Racing dynamics
-    let speed = 295;
-    const maxSpeed = 345;
+    // Dynamic racing simulation variables
+    let speed = 312;
+    const maxSpeed = 352;
     let trackOffset = 0;
     let curve = 0;
-    let targetCurve = 0.16;
+    let targetCurve = 0.15;
     let curveTimer = 0;
     let cameraShake = 0;
 
@@ -57,66 +65,74 @@ export const RaceTrackPOV: React.FC = () => {
     const sponsors = [
       { text: 'M7 GRAND PRIX', color: '#E10600', border: '#FF3333' },
       { text: 'AMARI 7', color: '#FFB800', border: '#FFD700' },
-      { text: 'PIRELLI', color: '#FFD700', border: '#E10600' },
+      { text: 'PIRELLI P-ZERO', color: '#FFD700', border: '#E10600' },
       { text: 'ROLEX', color: '#00D2BE', border: '#00FFCC' },
-      { text: 'CHAMPIONSHIP', color: '#FFFFFF', border: '#8E8E98' },
+      { text: 'WORLD CHAMPION', color: '#FFFFFF', border: '#8E8E98' },
     ];
 
-    // Battling F1 Cars
+    // F1 Racing Cars State
     interface F1Car {
       id: string;
-      lane: number;
-      currentX: number;
-      z: number;
-      speedDelta: number;
+      name: string;
+      x: number; // Lateral position (-0.45 to +0.45)
+      targetX: number;
+      z: number; // Longitudinal distance (0.68 to 0.90)
+      speed: number;
       primaryColor: string;
       secondaryColor: string;
       accentColor: string;
-      teamName: string;
+      tCamColor: string;
+      wingSponsor: string;
       driverNumber: string;
       drsActive: boolean;
-      overtakeTimer: number;
       rollAngle: number;
       sparkCooldown: number;
       flameTimer: number;
     }
 
-    const raceCars: F1Car[] = [
-      {
-        id: 'amari-7',
-        lane: -0.14,
-        currentX: -0.14,
-        z: 0.86,
-        speedDelta: 0.03,
-        primaryColor: '#E10600',
-        secondaryColor: '#120202',
-        accentColor: '#FFB800',
-        teamName: 'SCUDERIA M7',
-        driverNumber: '7',
-        drsActive: true,
-        overtakeTimer: 0,
-        rollAngle: 0,
-        sparkCooldown: 0,
-        flameTimer: 0,
-      },
-      {
-        id: 'rival-teal',
-        lane: 0.24,
-        currentX: 0.24,
-        z: 0.77,
-        speedDelta: -0.02,
-        primaryColor: '#00D2BE',
-        secondaryColor: '#051210',
-        accentColor: '#FFFFFF',
-        teamName: 'PETRONAS AMG',
-        driverNumber: '63',
-        drsActive: true,
-        overtakeTimer: 1.8,
-        rollAngle: 0,
-        sparkCooldown: 0,
-        flameTimer: 0.5,
-      },
-    ];
+    const carAmari: F1Car = {
+      id: 'car-amari',
+      name: 'Mattheu Amari (M7)',
+      x: -0.16,
+      targetX: -0.16,
+      z: 0.86,
+      speed: 342,
+      primaryColor: '#D40000', // Ferrari / M7 Scarlet Red
+      secondaryColor: '#100202',
+      accentColor: '#FFB800', // Gold Championship accents
+      tCamColor: '#FFE600', // Fluoro yellow camera pod
+      wingSponsor: 'M7 GP',
+      driverNumber: '7',
+      drsActive: false,
+      rollAngle: 0,
+      sparkCooldown: 0,
+      flameTimer: 0,
+    };
+
+    const carRival: F1Car = {
+      id: 'car-rival',
+      name: 'Petronas AMG Rival',
+      x: -0.16,
+      targetX: -0.16,
+      z: 0.72,
+      speed: 350,
+      primaryColor: '#00B8A9', // Petronas Emerald
+      secondaryColor: '#061412',
+      accentColor: '#FFFFFF',
+      tCamColor: '#181818', // Black camera pod
+      wingSponsor: 'AMG',
+      driverNumber: '63',
+      drsActive: true,
+      rollAngle: 0,
+      sparkCooldown: 0,
+      flameTimer: 0,
+    };
+
+    // Strict Overtake State Machine
+    type BattlePhase = 'slipstreaming' | 'pulling-out' | 'wheel-to-wheel' | 'clear-ahead';
+    let battlePhase: BattlePhase = 'slipstreaming';
+    let battleTimer = 0;
+    let leadingCarId: 'car-amari' | 'car-rival' = 'car-amari';
 
     let lastTime = performance.now();
 
@@ -125,24 +141,24 @@ export const RaceTrackPOV: React.FC = () => {
         const dt = Math.min((now - lastTime) / 1000, 0.08);
         lastTime = now;
 
-        // Accelerate up to 345 km/h
+        // Speed progression
         if (speed < maxSpeed) {
-          speed = Math.min(speed + dt * 40, maxSpeed);
+          speed = Math.min(speed + dt * 45, maxSpeed);
         }
-        trackOffset += (speed * 0.92) * dt;
+        trackOffset += (speed * 0.94) * dt;
 
         // Curvature shifts
         curveTimer += dt;
-        if (curveTimer > 3.2) {
+        if (curveTimer > 3.4) {
           curveTimer = 0;
-          targetCurve = (Math.random() - 0.5) * 0.8;
+          targetCurve = (Math.random() - 0.5) * 0.75;
         }
-        curve += (targetCurve - curve) * dt * 1.5;
+        curve += (targetCurve - curve) * dt * 1.4;
 
         // High-speed camera shudder
         cameraShake = (Math.sin(now * 0.08) * 0.8 + Math.cos(now * 0.14) * 0.5) * (speed / 300);
 
-        // Low-angle camera geometry
+        // Low camera perspective setup
         const horizonY = height * 0.23 + cameraShake * 0.45;
         const centerX = width * 0.5 + curve * width * 0.12;
         const trackDepth = height - horizonY;
@@ -240,13 +256,12 @@ export const RaceTrackPOV: React.FC = () => {
           const segmentIdx = Math.floor(trackOffset + i);
           const isAlternate = segmentIdx % 2 === 0;
 
-          // A. Run-Off and Trackside Sponsor Barriers
+          // Run-Off and Trackside Sponsor Barriers
           const barrierW1 = w1 * 0.38;
           const barrierW2 = w2 * 0.38;
           const barrierH1 = Math.max(3, 40 * scale1);
           const barrierH2 = Math.max(3, 40 * scale2);
 
-          // Dark Run-off tarmac outside the track
           ctx.fillStyle = '#06060A';
           ctx.fillRect(0, y1, width, y2 - y1 + 1);
 
@@ -263,7 +278,6 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.closePath();
           ctx.fill();
 
-          // Left Barrier Glowing Neon Top Edge
           ctx.strokeStyle = sponsor.border;
           ctx.lineWidth = Math.max(1.2, 3 * scale1);
           ctx.beginPath();
@@ -281,14 +295,13 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.closePath();
           ctx.fill();
 
-          // Right Barrier Glowing Neon Top Edge
           ctx.strokeStyle = sponsor.border;
           ctx.beginPath();
           ctx.moveTo(x1 + w1 + barrierW1, y1 - barrierH1);
           ctx.lineTo(x2 + w2 + barrierW2, y2 - barrierH2);
           ctx.stroke();
 
-          // B. Dark Asphalt Surface
+          // Dark Asphalt Surface
           const asphaltGrad = ctx.createLinearGradient(x1 - w1, y1, x1 + w1, y1);
           asphaltGrad.addColorStop(0, '#101018');
           asphaltGrad.addColorStop(0.5, isAlternate ? '#161622' : '#12121B');
@@ -302,7 +315,7 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.closePath();
           ctx.fill();
 
-          // C. Heavy Rubbered-in Racing Lines
+          // Heavy Rubbered-in Racing Lines
           if (scale1 > 0.08) {
             const rubberAlpha = Math.min(0.5, scale1 * 0.58);
             ctx.fillStyle = `rgba(2, 2, 4, ${rubberAlpha})`;
@@ -330,7 +343,7 @@ export const RaceTrackPOV: React.FC = () => {
             ctx.fill();
           }
 
-          // D. 3D Elevated Championship Kerbs
+          // 3D Elevated Championship Kerbs
           const kerbW1 = w1 * 0.16;
           const kerbW2 = w2 * 0.16;
           const kerbColor = isAlternate ? '#E10600' : '#FFFFFF';
@@ -362,7 +375,7 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.fillStyle = kerbShadow;
           ctx.fillRect(x2 + w2, y2 - 1, kerbW2 * 0.3, 2);
 
-          // E. White Center Dashed Markings
+          // White Center Dashed Markings
           if (Math.floor((trackOffset + i) / 2.5) % 2 === 0 && scale1 > 0.1) {
             const dashW1 = Math.max(1.8, w1 * 0.024);
             const dashW2 = Math.max(1.8, w2 * 0.024);
@@ -377,233 +390,455 @@ export const RaceTrackPOV: React.FC = () => {
           }
         }
 
-        // 3. RENDER SCULPTED, LARGE, AERODYNAMIC FORMULA 1 CARS
-        const sortedCars = [...raceCars].sort((a, b) => a.z - b.z);
+        // 3. PHYSICAL OVERTAKING LOGIC & HARD COLLISION AVOIDANCE
+        const lead = leadingCarId === 'car-amari' ? carAmari : carRival;
+        const pursuer = leadingCarId === 'car-amari' ? carRival : carAmari;
 
-        sortedCars.forEach((car) => {
-          car.overtakeTimer -= dt;
-          if (car.overtakeTimer <= 0) {
-            car.overtakeTimer = 2.5 + Math.random() * 2.2;
-            car.lane = car.id === 'amari-7'
-              ? -0.15 + (Math.random() - 0.5) * 0.22
-              : 0.22 + (Math.random() - 0.5) * 0.25;
-            car.drsActive = true;
-            car.flameTimer = 0.35;
+        battleTimer += dt;
+
+        // Realistic F1 battle sequence:
+        if (battlePhase === 'slipstreaming') {
+          // Pursuer is drafting directly in leader's aerodynamic slipstream
+          pursuer.drsActive = true;
+          lead.drsActive = false;
+
+          // Trailing directly behind
+          pursuer.targetX = lead.x;
+
+          // Surging forward in the slipstream
+          pursuer.z = Math.min(lead.z - 0.09, pursuer.z + dt * 0.09);
+
+          // HARD ANTI-CLIPPING BOUNDARY:
+          // Pursuer CANNOT drive through the leader's rear crash structure!
+          if (Math.abs(pursuer.x - lead.x) < 0.28) {
+            pursuer.z = Math.min(pursuer.z, lead.z - 0.08);
           }
 
-          const prevX = car.currentX;
-          car.currentX += (car.lane - car.currentX) * dt * 2.6;
-          car.rollAngle = (car.currentX - prevX) * 24;
+          // Once closed in, pursuer MUST DIVERGE INTO FREE SPACE to attempt the pass!
+          if (pursuer.z >= lead.z - 0.11 || battleTimer > 3.0) {
+            battlePhase = 'pulling-out';
+            battleTimer = 0;
+            // Target the open lane (if leader is left, attack right; if right, attack left)
+            const openLane = lead.x < 0 ? 0.24 : -0.24;
+            pursuer.targetX = openLane;
+            pursuer.flameTimer = 0.45; // Downshift flame burst!
+          }
+        } else if (battlePhase === 'pulling-out') {
+          // Pursuer moves laterally into free track space
+          lead.targetX = leadingCarId === 'car-amari' ? -0.16 : 0.16;
 
-          car.z += car.speedDelta * dt * 0.45;
-          if (car.z > 0.90) car.speedDelta = -Math.abs(car.speedDelta);
-          if (car.z < 0.76) car.speedDelta = Math.abs(car.speedDelta);
+          // PHYSICAL BARRIER: If lateral clearance is not yet achieved, HOLD BEHIND!
+          const lateralClearance = Math.abs(pursuer.x - lead.x);
+          if (lateralClearance < 0.32) {
+            pursuer.z = Math.min(pursuer.z, lead.z - 0.07);
+          } else {
+            // Lateral space achieved! Pursuer accelerates alongside!
+            pursuer.z += dt * 0.085;
+          }
 
+          // When alongside in separate lanes
+          if (lateralClearance >= 0.32 && pursuer.z >= lead.z - 0.04) {
+            battlePhase = 'wheel-to-wheel';
+            battleTimer = 0;
+          }
+        } else if (battlePhase === 'wheel-to-wheel') {
+          // Wheel-to-wheel racing! Side by side with STRICT physical separation
+          pursuer.drsActive = true;
+          lead.drsActive = false;
+
+          // Accelerating past with DRS
+          pursuer.z += dt * 0.065;
+          lead.z = Math.max(0.72, lead.z - dt * 0.04);
+
+          // Sparks shower from both undertrays!
+          pursuer.sparkCooldown += dt * 2.2;
+          lead.sparkCooldown += dt * 2.2;
+
+          if (pursuer.z > lead.z + 0.10 || battleTimer > 3.0) {
+            battlePhase = 'clear-ahead';
+            battleTimer = 0;
+          }
+        } else if (battlePhase === 'clear-ahead') {
+          // Overtake executed cleanly! New leader sweeps into the racing line ahead!
+          pursuer.targetX = pursuer.id === 'car-amari' ? -0.16 : 0.16;
+          lead.targetX = pursuer.targetX; // Old leader now drafts in the new leader's wake!
+          lead.drsActive = true;
+          pursuer.drsActive = false;
+
+          pursuer.z = Math.min(0.88, pursuer.z + dt * 0.02);
+          lead.z = Math.max(0.72, lead.z - dt * 0.035);
+
+          if (battleTimer > 2.6) {
+            // Swap roles! The overtaken car now prepares its counter-attack!
+            leadingCarId = pursuer.id as 'car-amari' | 'car-rival';
+            battlePhase = 'slipstreaming';
+            battleTimer = 0;
+          }
+        }
+
+        // Steer cars smoothly and calculate suspension roll
+        [carAmari, carRival].forEach((car) => {
+          const prevX = car.x;
+          car.x += (car.targetX - car.x) * dt * 2.9;
+          car.rollAngle = (car.x - prevX) * 26;
+        });
+
+        // 4. ABSOLUTE LATERAL COLLISION ENFORCEMENT
+        // Even during dynamic interpolation, enforce that if delta-z < 0.10,
+        // their centers CANNOT be closer than 0.34 normalized track width!
+        const deltaZ = Math.abs(carAmari.z - carRival.z);
+        if (deltaZ < 0.10) {
+          const deltaX = carRival.x - carAmari.x;
+          const minSeparation = 0.35;
+          if (Math.abs(deltaX) < minSeparation) {
+            const push = (minSeparation - Math.abs(deltaX)) * 0.5;
+            if (deltaX >= 0) {
+              carRival.x += push;
+              carAmari.x -= push;
+            } else {
+              carRival.x -= push;
+              carAmari.x += push;
+            }
+          }
+        }
+
+        // 5. RENDER AUTHENTIC 2024/2026 FORMULA 1 MACHINES
+        const sortedCars = [carAmari, carRival].sort((a, b) => a.z - b.z);
+
+        sortedCars.forEach((car) => {
           const cScale = Math.pow(car.z, 2.35);
           const cy = horizonY + cScale * trackDepth;
           const curScale = (cy - horizonY) / trackDepth;
           const cCurve = Math.pow(1 - curScale, 2.2) * curve * width * 0.46;
-          const cx = centerX - cCurve + car.currentX * roadWidthBottom * curScale * 0.46;
+          const cx = centerX - cCurve + car.x * roadWidthBottom * curScale * 0.46;
 
-          // Responsive sizing: adapts to phone (375px) vs desktop (1536px)
-          const maxResponsiveWidth = Math.min(width * 0.70, 420);
-          const carW = Math.max(110, maxResponsiveWidth * curScale);
+          // Responsive sizing
+          const maxResponsiveWidth = Math.min(width * 0.65, 410);
+          const carW = Math.max(105, maxResponsiveWidth * curScale);
           const carH = carW * 0.38;
 
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(car.rollAngle * (Math.PI / 180));
 
-          // 1. Asphalt Ground Shadow
-          const groundShadow = ctx.createRadialGradient(0, carH * 0.3, Math.max(0.1, carW * 0.12), 0, carH * 0.3, Math.max(0.1, carW * 0.65));
+          // A. Underfloor Ground Occlusion Shadow
+          const groundShadow = ctx.createRadialGradient(
+            0, carH * 0.32, Math.max(0.1, carW * 0.12),
+            0, carH * 0.32, Math.max(0.1, carW * 0.62)
+          );
           groundShadow.addColorStop(0, 'rgba(0, 0, 0, 0.98)');
-          groundShadow.addColorStop(0.45, 'rgba(0, 0, 0, 0.75)');
+          groundShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
           groundShadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx.fillStyle = groundShadow;
           ctx.beginPath();
           ctx.ellipse(0, carH * 0.32, Math.max(0.1, carW * 0.58), Math.max(0.1, carH * 0.36), 0, 0, Math.PI * 2);
           ctx.fill();
 
-          // 2. Wide Slick Pirelli P-Zero Racing Tires
-          const tireW = carW * 0.23;
-          const tireH = carH * 0.86;
+          // B. Wide Carbon Floor Edges (Exposed Venturi undertray)
+          const floorW = carW * 0.82;
+          ctx.fillStyle = '#0B0B12';
+          ctx.fillRect(-floorW * 0.5, carH * 0.05, floorW, Math.max(1.5, 3 * curScale));
+
+          // Floor edge winglets (aerodynamic vertical floor fences)
+          ctx.fillStyle = '#141420';
+          ctx.fillRect(-floorW * 0.5, -carH * 0.08, Math.max(1.5, 3 * curScale), carH * 0.18);
+          ctx.fillRect(floorW * 0.5 - Math.max(1.5, 3 * curScale), -carH * 0.08, Math.max(1.5, 3 * curScale), carH * 0.18);
+
+          // C. Massive Rear 405mm Pirelli P-Zero Slick Tires
+          const tireW = carW * 0.225;
+          const tireH = carH * 0.88;
           const tireY = -tireH * 0.62;
 
-          const renderF1Tire = (isLeft: boolean) => {
-            const tx = isLeft ? -carW * 0.52 : carW * 0.29;
+          const renderTire = (isLeft: boolean) => {
+            const tx = isLeft ? -carW * 0.515 : carW * 0.29;
             ctx.save();
             ctx.translate(tx + tireW * 0.5, tireY + tireH * 0.5);
+            // Realistic negative camber tilt (3.5 deg)
             ctx.rotate((isLeft ? 3.5 : -3.5) * (Math.PI / 180));
 
+            // Cylindrical 3D tire barrel with rubber shoulder
             const tireGrad = ctx.createLinearGradient(-tireW * 0.5, 0, tireW * 0.5, 0);
-            tireGrad.addColorStop(0, '#08080C');
-            tireGrad.addColorStop(0.35, '#22222E');
-            tireGrad.addColorStop(0.7, '#14141E');
-            tireGrad.addColorStop(1, '#050508');
+            tireGrad.addColorStop(0, '#06060A');
+            tireGrad.addColorStop(0.35, '#20202C');
+            tireGrad.addColorStop(0.7, '#12121A');
+            tireGrad.addColorStop(1, '#040407');
             ctx.fillStyle = tireGrad;
             ctx.beginPath();
             if (ctx.roundRect) {
-              ctx.roundRect(-tireW * 0.5, -tireH * 0.5, tireW, tireH, Math.max(0, 6 * curScale));
+              ctx.roundRect(-tireW * 0.5, -tireH * 0.5, tireW, tireH, Math.max(0, 5 * curScale));
             } else {
               ctx.rect(-tireW * 0.5, -tireH * 0.5, tireW, tireH);
             }
             ctx.fill();
 
-            // Pirelli Red Tyre Compound Sidewall Rings
+            // Pirelli Red Soft Compound Sidewall Rings
             ctx.strokeStyle = '#E10600';
-            ctx.lineWidth = Math.max(2, 4 * curScale);
+            ctx.lineWidth = Math.max(2, 3.8 * curScale);
             ctx.beginPath();
             ctx.ellipse(0, 0, Math.max(0.1, tireW * 0.38), Math.max(0.1, tireH * 0.4), 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Inner wheel rim highlight
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            // Inner wheel rim ring
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
             ctx.lineWidth = Math.max(1, 1.5 * curScale);
             ctx.beginPath();
             ctx.ellipse(0, 0, Math.max(0.1, tireW * 0.26), Math.max(0.1, tireH * 0.28), 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Carbon Aero Wheel Cover & Gold Centerlock
-            ctx.fillStyle = '#0D0D14';
+            // Carbon Aero Wheel Cover & Titanium Centerlock Nut
+            ctx.fillStyle = '#0B0B12';
             ctx.beginPath();
             ctx.arc(0, 0, Math.max(0.1, tireW * 0.22), 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = '#FFB800';
+            ctx.fillStyle = '#FFB800'; // Gold Centerlock
             ctx.beginPath();
             ctx.arc(0, 0, Math.max(1.5, 3.5 * curScale), 0, Math.PI * 2);
             ctx.fill();
 
+            // Rear Wheel Aerodynamic Deflector Vane (Arching over top of tire)
+            ctx.strokeStyle = '#181824';
+            ctx.lineWidth = Math.max(1.8, 3.5 * curScale);
+            ctx.beginPath();
+            ctx.arc(0, -tireH * 0.52, Math.max(0.1, tireW * 0.48), Math.PI * 0.85, Math.PI * 0.15, true);
+            ctx.stroke();
+
             ctx.restore();
           };
 
-          renderF1Tire(true);
-          renderF1Tire(false);
+          renderTire(true);
+          renderTire(false);
 
-          // 3. Carbon Suspension Wishbone Arms
-          ctx.strokeStyle = '#181822';
+          // D. Carbon Double-Wishbone Suspension Arms & Pushrods
+          ctx.strokeStyle = '#161622';
           ctx.lineWidth = Math.max(1.5, 3 * curScale);
           ctx.beginPath();
-          ctx.moveTo(-carW * 0.22, -carH * 0.55);
-          ctx.lineTo(-carW * 0.40, -carH * 0.52);
-          ctx.moveTo(-carW * 0.22, -carH * 0.25);
-          ctx.lineTo(-carW * 0.40, -carH * 0.22);
-          ctx.moveTo(carW * 0.22, -carH * 0.55);
-          ctx.lineTo(carW * 0.40, -carH * 0.52);
-          ctx.moveTo(carW * 0.22, -carH * 0.25);
-          ctx.lineTo(carW * 0.40, -carH * 0.22);
+          // Left suspension (upper & lower wishbone)
+          ctx.moveTo(-carW * 0.18, -carH * 0.54);
+          ctx.lineTo(-carW * 0.40, -carH * 0.50);
+          ctx.moveTo(-carW * 0.18, -carH * 0.22);
+          ctx.lineTo(-carW * 0.40, -carH * 0.18);
+          // Left pushrod
+          ctx.moveTo(-carW * 0.18, -carH * 0.22);
+          ctx.lineTo(-carW * 0.38, -carH * 0.52);
+
+          // Right suspension
+          ctx.moveTo(carW * 0.18, -carH * 0.54);
+          ctx.lineTo(carW * 0.40, -carH * 0.50);
+          ctx.moveTo(carW * 0.18, -carH * 0.22);
+          ctx.lineTo(carW * 0.40, -carH * 0.18);
+          // Right pushrod
+          ctx.moveTo(carW * 0.18, -carH * 0.22);
+          ctx.lineTo(carW * 0.38, -carH * 0.52);
           ctx.stroke();
 
-          // 4. Carbon Fibre Diffuser Tunnels
-          const diffW = carW * 0.56;
-          const diffH = carH * 0.36;
-          ctx.fillStyle = '#09090E';
+          // E. Venturi Diffuser & Titanium Exhaust Structure
+          const diffW = carW * 0.54;
+          const diffH = carH * 0.35;
+          ctx.fillStyle = '#08080E';
           ctx.beginPath();
           if (ctx.roundRect) {
-            ctx.roundRect(-diffW * 0.5, -diffH * 0.5, diffW, diffH, Math.max(0, 4 * curScale));
+            ctx.roundRect(-diffW * 0.5, -diffH * 0.4, diffW, diffH, Math.max(0, 4 * curScale));
           } else {
-            ctx.rect(-diffW * 0.5, -diffH * 0.5, diffW, diffH);
+            ctx.rect(-diffW * 0.5, -diffH * 0.4, diffW, diffH);
           }
           ctx.fill();
 
-          // Diffuser vertical venturi strakes
-          ctx.strokeStyle = '#1E1E2C';
-          ctx.lineWidth = Math.max(1, 2.5 * curScale);
+          // 4 Vertical Aerodynamic Diffuser Strakes
+          ctx.strokeStyle = '#1C1C28';
+          ctx.lineWidth = Math.max(1.2, 2.5 * curScale);
           for (let s = -3; s <= 3; s++) {
             if (s === 0) continue;
             const fx = (diffW * 0.44 / 3) * s;
             ctx.beginPath();
-            ctx.moveTo(fx, -diffH * 0.45);
-            ctx.lineTo(fx, diffH * 0.45);
+            ctx.moveTo(fx, -diffH * 0.35);
+            ctx.lineTo(fx, diffH * 0.55);
             ctx.stroke();
           }
 
-          // Exhaust Exit with Turbo Glow & Downshift Flame
+          // Single Central Titanium Exhaust with Downshift Flames
           car.flameTimer = Math.max(0, car.flameTimer - dt);
           if (car.flameTimer > 0) {
-            const flameGrad = ctx.createRadialGradient(0, -diffH * 0.15, 2, 0, -diffH * 0.15, Math.max(5, 22 * curScale));
+            const flameGrad = ctx.createRadialGradient(0, -diffH * 0.12, 2, 0, -diffH * 0.12, Math.max(5, 24 * curScale));
             flameGrad.addColorStop(0, '#FFFFFF');
-            flameGrad.addColorStop(0.3, '#FFB800');
-            flameGrad.addColorStop(0.7, '#FF3300');
+            flameGrad.addColorStop(0.25, '#FFB800');
+            flameGrad.addColorStop(0.65, '#FF3300');
             flameGrad.addColorStop(1, 'rgba(255, 0, 0, 0)');
             ctx.fillStyle = flameGrad;
             ctx.beginPath();
-            ctx.arc(0, -diffH * 0.15, Math.max(5, 22 * curScale), 0, Math.PI * 2);
+            ctx.arc(0, -diffH * 0.12, Math.max(5, 24 * curScale), 0, Math.PI * 2);
             ctx.fill();
           } else {
             ctx.fillStyle = '#FF5500';
             ctx.shadowColor = '#FF3300';
             ctx.shadowBlur = 12 * curScale;
             ctx.beginPath();
-            ctx.arc(0, -diffH * 0.18, Math.max(3, 6.5 * curScale), 0, Math.PI * 2);
+            ctx.arc(0, -diffH * 0.15, Math.max(3, 6.5 * curScale), 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
           }
 
-          // 5. Sculpted Aerodynamic Coke-Bottle Bodywork & Sidepods
-          const bodyGrad = ctx.createLinearGradient(0, -carH * 0.95, 0, 0);
-          bodyGrad.addColorStop(0, car.accentColor);
-          bodyGrad.addColorStop(0.32, car.primaryColor);
-          bodyGrad.addColorStop(0.85, car.secondaryColor);
-          bodyGrad.addColorStop(1, '#050508');
-          ctx.fillStyle = bodyGrad;
+          // F. Lower Beam Wing (Sits low above diffuser, between rear wheels)
+          const beamW = carW * 0.54;
+          const beamH = carH * 0.11;
+          ctx.fillStyle = '#14141E';
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(-beamW * 0.5, -diffH * 0.85, beamW, beamH, Math.max(0, 2 * curScale));
+          } else {
+            ctx.rect(-beamW * 0.5, -diffH * 0.85, beamW, beamH);
+          }
+          ctx.fill();
+
+          // G. Authentic F1 Sculpted Sidepods & Coke-Bottle Engine Cover
+          // (Angular, sculpted, athletic - NOT a round bulb!)
+          const sidepodY = -carH * 0.72;
+
+          // Left Sidepod (Flat top surface + angular undercut)
+          const leftPodGrad = ctx.createLinearGradient(-carW * 0.32, sidepodY, -carW * 0.14, 0);
+          leftPodGrad.addColorStop(0, car.primaryColor);
+          leftPodGrad.addColorStop(0.65, car.secondaryColor);
+          leftPodGrad.addColorStop(1, '#06060A');
+          ctx.fillStyle = leftPodGrad;
 
           ctx.beginPath();
-          ctx.moveTo(-carW * 0.16, -carH * 0.9);
-          ctx.lineTo(carW * 0.16, -carH * 0.9);
-          ctx.bezierCurveTo(carW * 0.3, -carH * 0.68, carW * 0.38, -carH * 0.28, carW * 0.29, 0);
-          ctx.lineTo(-carW * 0.29, 0);
-          ctx.bezierCurveTo(-carW * 0.38, -carH * 0.28, -carW * 0.3, -carH * 0.68, -carW * 0.16, -carH * 0.9);
+          ctx.moveTo(-carW * 0.32, sidepodY + carH * 0.15); // Outer top shoulder
+          ctx.lineTo(-carW * 0.14, sidepodY);              // Inner shoulder
+          ctx.lineTo(-carW * 0.12, 0);                     // Gearbox waist
+          ctx.lineTo(-carW * 0.28, 0);                     // Outer floor undercut
           ctx.closePath();
           ctx.fill();
 
-          // Glossy clearcoat sheen
-          const glossGrad = ctx.createLinearGradient(-carW * 0.1, -carH * 0.85, carW * 0.1, -carH * 0.85);
-          glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-          glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.45)');
-          glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-          ctx.fillStyle = glossGrad;
-          ctx.fillRect(-carW * 0.14, -carH * 0.88, carW * 0.28, carH * 0.45);
+          // Right Sidepod (Flat top surface + angular undercut)
+          const rightPodGrad = ctx.createLinearGradient(carW * 0.14, sidepodY, carW * 0.32, 0);
+          rightPodGrad.addColorStop(0, car.secondaryColor);
+          rightPodGrad.addColorStop(0.35, car.primaryColor);
+          rightPodGrad.addColorStop(1, '#06060A');
+          ctx.fillStyle = rightPodGrad;
 
-          // Carbon Shark Fin
-          ctx.fillStyle = '#08080C';
           ctx.beginPath();
-          ctx.moveTo(-carW * 0.02, -carH * 1.2);
-          ctx.lineTo(carW * 0.02, -carH * 1.2);
-          ctx.lineTo(carW * 0.035, -carH * 0.48);
-          ctx.lineTo(-carW * 0.035, -carH * 0.48);
+          ctx.moveTo(carW * 0.14, sidepodY);               // Inner shoulder
+          ctx.lineTo(carW * 0.32, sidepodY + carH * 0.15); // Outer top shoulder
+          ctx.lineTo(carW * 0.28, 0);                      // Outer floor undercut
+          ctx.lineTo(carW * 0.12, 0);                      // Gearbox waist
           ctx.closePath();
           ctx.fill();
 
-          // Driver Racing Number Badge (#7)
+          // Central Engine Spine & Tapered Cowl
+          const cowlGrad = ctx.createLinearGradient(0, -carH * 0.95, 0, 0);
+          cowlGrad.addColorStop(0, car.accentColor);
+          cowlGrad.addColorStop(0.3, car.primaryColor);
+          cowlGrad.addColorStop(1, car.secondaryColor);
+          ctx.fillStyle = cowlGrad;
+
+          ctx.beginPath();
+          ctx.moveTo(-carW * 0.10, -carH * 0.95);
+          ctx.lineTo(carW * 0.10, -carH * 0.95);
+          ctx.lineTo(carW * 0.12, 0);
+          ctx.lineTo(-carW * 0.12, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          // Sidepod Cooling Gill Louvres
+          ctx.strokeStyle = '#08080C';
+          ctx.lineWidth = Math.max(1, 2 * curScale);
+          for (let l = 0; l < 4; l++) {
+            const ly = sidepodY + carH * (0.25 + l * 0.09);
+            // Left louvres
+            ctx.beginPath();
+            ctx.moveTo(-carW * 0.18, ly);
+            ctx.lineTo(-carW * 0.26, ly + 2);
+            ctx.stroke();
+            // Right louvres
+            ctx.beginPath();
+            ctx.moveTo(carW * 0.18, ly);
+            ctx.lineTo(carW * 0.26, ly + 2);
+            ctx.stroke();
+          }
+
+          // Carbon Shark Fin (Razor spine)
+          ctx.fillStyle = '#06060A';
+          ctx.beginPath();
+          ctx.moveTo(-carW * 0.018, -carH * 1.25);
+          ctx.lineTo(carW * 0.018, -carH * 1.25);
+          ctx.lineTo(carW * 0.026, -carH * 0.42);
+          ctx.lineTo(-carW * 0.026, -carH * 0.42);
+          ctx.closePath();
+          ctx.fill();
+
+          // Driver Racing Number (#7 Mattheu Amari / #63 Rival)
           ctx.fillStyle = '#FFFFFF';
           ctx.font = `900 italic ${Math.max(11, Math.floor(25 * curScale))}px "Formula1", sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(car.driverNumber, 0, -carH * 0.68);
+          ctx.fillText(car.driverNumber, 0, -carH * 0.65);
 
-          // 6. Halo Titanium Safety Hoop & Driver Helmet
-          ctx.strokeStyle = '#14141E';
+          // H. Dual Aerodynamic Wing Mirrors on Stalks
+          const mirrorY = -carH * 0.82;
+          ctx.strokeStyle = '#181822';
+          ctx.lineWidth = Math.max(1.5, 2.5 * curScale);
+          // Left mirror stalk & housing
+          ctx.beginPath();
+          ctx.moveTo(-carW * 0.12, -carH * 0.75);
+          ctx.lineTo(-carW * 0.22, mirrorY);
+          ctx.stroke();
+          ctx.fillStyle = car.primaryColor;
+          ctx.fillRect(-carW * 0.26, mirrorY - 3, carW * 0.06, Math.max(2, 5 * curScale));
+
+          // Right mirror stalk & housing
+          ctx.beginPath();
+          ctx.moveTo(carW * 0.12, -carH * 0.75);
+          ctx.lineTo(carW * 0.22, mirrorY);
+          ctx.stroke();
+          ctx.fillStyle = car.primaryColor;
+          ctx.fillRect(carW * 0.20, mirrorY - 3, carW * 0.06, Math.max(2, 5 * curScale));
+
+          // I. Titanium Halo Safety Hoop & Driver Helmet
+          ctx.strokeStyle = '#12121A';
           ctx.lineWidth = Math.max(2.5, 6 * curScale);
           ctx.beginPath();
-          ctx.arc(0, -carH * 0.98, Math.max(0.1, carW * 0.1), Math.PI * 0.9, Math.PI * 0.1, true);
+          ctx.arc(0, -carH * 0.98, Math.max(0.1, carW * 0.095), Math.PI * 0.9, Math.PI * 0.1, true);
           ctx.stroke();
 
-          // Driver Helmet
+          // Driver Helmet with reflective visor
           ctx.fillStyle = car.accentColor;
           ctx.beginPath();
-          ctx.arc(0, -carH * 0.92, Math.max(3, 10 * curScale), 0, Math.PI * 2);
+          ctx.arc(0, -carH * 0.92, Math.max(3, 9.5 * curScale), 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(-carW * 0.045, -carH * 0.94, carW * 0.09, Math.max(2, 5 * curScale));
+          ctx.fillStyle = '#000000'; // Visor band
+          ctx.fillRect(-carW * 0.04, -carH * 0.94, carW * 0.08, Math.max(2, 4.5 * curScale));
 
-          // 7. Sculpted Carbon Fiber Rear Wing Assembly
+          // J. Engine Airbox Intake & Apex T-Cam Broadcast Pod
+          const airboxW = carW * 0.13;
+          const airboxH = carH * 0.22;
+          const airboxY = -carH * 1.26;
+
+          // Airbox triangular intake scoop
+          ctx.fillStyle = '#0E0E16';
+          ctx.beginPath();
+          ctx.moveTo(-airboxW * 0.5, airboxY + airboxH);
+          ctx.lineTo(0, airboxY);
+          ctx.lineTo(airboxW * 0.5, airboxY + airboxH);
+          ctx.closePath();
+          ctx.fill();
+
+          // Iconic F1 Apex T-Cam Pod (fluoro yellow for leader, black for rival)
+          ctx.fillStyle = car.tCamColor;
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(-carW * 0.025, airboxY - carH * 0.08, carW * 0.05, carH * 0.08, Math.max(0, 1.5 * curScale));
+          } else {
+            ctx.rect(-carW * 0.025, airboxY - carH * 0.08, carW * 0.05, carH * 0.08);
+          }
+          ctx.fill();
+
+          // K. Swept Dual-Element Rear Wing & DRS Actuator
           const wingW = carW * 0.84;
           const wingH = carH * 0.25;
-          const wingY = -carH * 1.32;
+          const wingY = -carH * 1.34;
 
-          // Pylons
-          ctx.strokeStyle = '#0B0B10';
+          // Twin Carbon Swan-Neck Mounting Pylons
+          ctx.strokeStyle = '#08080E';
           ctx.lineWidth = Math.max(1.8, 4.5 * curScale);
           ctx.beginPath();
           ctx.moveTo(-wingW * 0.18, -carH * 0.65);
@@ -612,8 +847,8 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.lineTo(wingW * 0.16, wingY + wingH * 0.55);
           ctx.stroke();
 
-          // Mainplane
-          ctx.fillStyle = '#14141E';
+          // Mainplane Lower Airfoil Element
+          ctx.fillStyle = '#12121C';
           ctx.beginPath();
           if (ctx.roundRect) {
             ctx.roundRect(-wingW * 0.5, wingY + wingH * 0.45, wingW, wingH * 0.55, Math.max(0, 3 * curScale));
@@ -622,51 +857,53 @@ export const RaceTrackPOV: React.FC = () => {
           }
           ctx.fill();
 
-          // Upper DRS Flap
-          const drsGap = car.drsActive ? wingH * 0.65 : 1.5;
+          // Upper DRS Flap (Animates Open when active!)
+          const drsGap = car.drsActive ? wingH * 0.70 : 1.5;
           ctx.fillStyle = car.primaryColor;
           ctx.beginPath();
           if (ctx.roundRect) {
-            ctx.roundRect(-wingW * 0.48, wingY - drsGap, wingW * 0.96, wingH * 0.48, Math.max(0, 2.5 * curScale));
+            ctx.roundRect(-wingW * 0.48, wingY - drsGap, wingW * 0.96, wingH * 0.46, Math.max(0, 2.5 * curScale));
           } else {
-            ctx.rect(-wingW * 0.48, wingY - drsGap, wingW * 0.96, wingH * 0.48);
+            ctx.rect(-wingW * 0.48, wingY - drsGap, wingW * 0.96, wingH * 0.46);
           }
           ctx.fill();
 
-          // Carbon Wing Endplates with Accent Aero Trim
-          const endW = wingW * 0.065;
-          const endH = wingH * 2.3;
+          // Flap sponsor text on top wing
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `900 italic ${Math.max(8, Math.floor(13 * curScale))}px "Formula1", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(car.wingSponsor, 0, wingY - drsGap + wingH * 0.23);
+
+          // Sculpted Carbon Endplates (Curved aerodynamic plates without antenna lines)
+          const endW = wingW * 0.07;
+          const endH = wingH * 2.2;
 
           // Left Endplate
-          ctx.fillStyle = '#0F0F16';
+          ctx.fillStyle = '#0E0E18';
           ctx.beginPath();
           if (ctx.roundRect) {
-            ctx.roundRect(-wingW * 0.52, wingY - wingH * 0.55, endW, endH, Math.max(0, 2.5 * curScale));
+            ctx.roundRect(-wingW * 0.52, wingY - wingH * 0.55, endW, endH, Math.max(0, 3 * curScale));
           } else {
             ctx.rect(-wingW * 0.52, wingY - wingH * 0.55, endW, endH);
           }
           ctx.fill();
-          ctx.fillStyle = car.accentColor;
-          ctx.fillRect(-wingW * 0.52, wingY - wingH * 0.55, Math.max(1.5, 2.5 * curScale), endH);
 
           // Right Endplate
-          ctx.fillStyle = '#0F0F16';
           ctx.beginPath();
           if (ctx.roundRect) {
-            ctx.roundRect(wingW * 0.455, wingY - wingH * 0.55, endW, endH, Math.max(0, 2.5 * curScale));
+            ctx.roundRect(wingW * 0.45, wingY - wingH * 0.55, endW, endH, Math.max(0, 3 * curScale));
           } else {
-            ctx.rect(wingW * 0.455, wingY - wingH * 0.55, endW, endH);
+            ctx.rect(wingW * 0.45, wingY - wingH * 0.55, endW, endH);
           }
           ctx.fill();
-          ctx.fillStyle = car.accentColor;
-          ctx.fillRect(wingW * 0.455 + endW - Math.max(1.5, 2.5 * curScale), wingY - wingH * 0.55, Math.max(1.5, 2.5 * curScale), endH);
 
-          // DRS Hydraulic Actuator Pod
+          // Central DRS Hydraulic Actuator Pod (Glowing teal/green when open)
           ctx.fillStyle = car.drsActive ? '#00D2BE' : '#333345';
-          ctx.fillRect(-carW * 0.028, wingY - drsGap * 0.5, carW * 0.056, wingH * 0.75);
+          ctx.fillRect(-carW * 0.025, wingY - drsGap * 0.5, carW * 0.05, wingH * 0.75);
 
-          // 8. Flashing FIA Rain Safety Light
-          const rainBlink = Math.sin(now * 0.038 + (car.id === 'amari-7' ? 0 : 2.0)) > 0;
+          // L. Flashing FIA Red Rain Safety LED Matrix
+          const rainBlink = Math.sin(now * 0.038 + (car.id === 'car-amari' ? 0 : 2.0)) > 0;
           if (rainBlink) {
             ctx.fillStyle = '#FF0000';
             ctx.shadowColor = '#FF0033';
@@ -681,7 +918,7 @@ export const RaceTrackPOV: React.FC = () => {
             ctx.shadowBlur = 0;
           }
 
-          // 9. Helical Slipstream Vortex Trails from Wing Tips
+          // M. Helical Slipstream Vortex Trails from Wing Tips
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
           ctx.lineWidth = Math.max(1.2, 2.6 * curScale);
           ctx.beginPath();
@@ -693,13 +930,13 @@ export const RaceTrackPOV: React.FC = () => {
 
           ctx.restore();
 
-          // 10. Titanium Ground-Effect Sparks
+          // N. Titanium Skid Block Sparks Spraying Backwards
           car.sparkCooldown += dt;
           if (car.sparkCooldown > 0.028) {
             car.sparkCooldown = 0;
             for (let s = 0; s < 4; s++) {
               sparks.push({
-                x: cx + (Math.random() - 0.5) * (carW * 0.4),
+                x: cx + (Math.random() - 0.5) * (carW * 0.38),
                 y: cy + carH * 0.16,
                 vx: (Math.random() - 0.5) * 550 - curve * 280,
                 vy: 140 + Math.random() * 380,
@@ -712,7 +949,7 @@ export const RaceTrackPOV: React.FC = () => {
           }
         });
 
-        // 4. RENDER TITANIUM SPARKS
+        // 6. RENDER TITANIUM SPARKS
         for (let i = sparks.length - 1; i >= 0; i--) {
           const s = sparks[i];
           s.x += s.vx * dt;
@@ -734,7 +971,7 @@ export const RaceTrackPOV: React.FC = () => {
           ctx.shadowBlur = 0;
         }
 
-        // 5. RADIAL SPEED MOTION STREAKS
+        // 7. RADIAL SPEED MOTION STREAKS
         if (speed > 280) {
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
           ctx.lineWidth = 1.5;
@@ -749,7 +986,7 @@ export const RaceTrackPOV: React.FC = () => {
           }
         }
 
-        // 6. CINEMATIC RADIAL VIGNETTE
+        // 8. CINEMATIC RADIAL VIGNETTE
         const vig = ctx.createRadialGradient(
           centerX,
           height * 0.45,
@@ -764,7 +1001,7 @@ export const RaceTrackPOV: React.FC = () => {
         ctx.fillStyle = vig;
         ctx.fillRect(0, 0, width, height);
 
-        // 7. ULTRA-LOW COCKPIT TELEMETRY DISPLAY (BOTTOM)
+        // 9. ULTRA-LOW COCKPIT TELEMETRY DISPLAY (BOTTOM)
         ctx.save();
         const isMobile = width < 600;
         const hudX = isMobile ? 12 : Math.max(20, width * 0.06);
