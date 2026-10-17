@@ -93,13 +93,9 @@ export const PaddockPass: React.FC = () => {
             {EVENT_CONFIG.celebrantName}
           </h1>
 
-          <div className="mt-1 flex items-center gap-2">
-            <span className="font-f1-head text-lg sm:text-xl font-bold tracking-widest text-[#E10600] uppercase">
+          <div className="mt-1 flex items-center justify-center">
+            <span className="font-f1-head text-base sm:text-lg md:text-xl font-bold tracking-widest text-[#E10600] uppercase">
               {EVENT_CONFIG.eventTitle}
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00D2BE]" />
-            <span className="font-telemetry text-xs sm:text-sm font-bold text-[#8E8E98] uppercase">
-              TURNING {EVENT_CONFIG.celebrantAge}
             </span>
           </div>
 

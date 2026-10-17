@@ -45,7 +45,7 @@ export const EVENT_CONFIG: EventConfig = {
   celebrantName: "Mattheu Amari",
   celebrantAge: 7,
   shortBrand: "M7",
-  eventTitle: "Mattheu Amari's 7th Grand Prix",
+  eventTitle: "7th Grand Prix Birthday",
   subTitle: "FORMULA 7 WORLD CHAMPIONSHIP",
   season: "2026 SEASON",
   round: "ROUND 07",
