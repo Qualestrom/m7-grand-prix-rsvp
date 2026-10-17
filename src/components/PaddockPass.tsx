@@ -24,12 +24,19 @@ export const PaddockPass: React.FC = () => {
   const [activeModal, setActiveModal] = useState<'none' | 'register' | 'decline'>('none');
   const [userRsvp, setUserRsvp] = useState<RsvpRecord | null>(null);
 
-  // Load persistent user RSVP on mount
+  // Load persistent user RSVP on mount & verify against live Supabase cloud database
   useEffect(() => {
+    // 1. Instant optimistic load from local storage
     const saved = rsvpService.getActiveUserRsvp();
     if (saved) {
       setUserRsvp(saved);
     }
+
+    // 2. Live verification: if admin deleted their record in database, 
+    // this automatically clears the local cache and reverts to a fresh invitation!
+    rsvpService.verifyActiveUserRsvp().then((verified) => {
+      setUserRsvp(verified);
+    });
   }, []);
 
   const mapInfo = getDeviceNavigationMapUrl();

@@ -338,6 +338,49 @@ class RsvpService {
     return this.getLocalRecords();
   }
 
+  // Verify with Supabase if the user's active RSVP still exists in the database.
+  // If an admin deleted their response, this automatically clears their local cache
+  // so their page reverts to a fresh invitation and they can respond newly.
+  public async verifyActiveUserRsvp(): Promise<RsvpRecord | null> {
+    const cached = this.getActiveUserRsvp();
+    if (!cached) return null;
+
+    if (!this.supabase) {
+      this.initSupabase();
+    }
+
+    if (this.supabase && cached.id) {
+      try {
+        const { data, error } = await this.supabase
+          .from('rsvps')
+          .select('*')
+          .eq('id', cached.id)
+          .maybeSingle();
+
+        if (error) {
+          // Network issue or offline: gracefully retain cached state
+          return cached;
+        }
+
+        if (!data) {
+          // Record was deleted from Supabase (by admin) -> clear local state!
+          this.clearActiveUserRsvp();
+          return null;
+        }
+
+        // Record exists and may have been updated by admin
+        const verified = data as RsvpRecord;
+        this.saveActiveUserRsvp(verified);
+        this.saveLocalRecord(verified);
+        return verified;
+      } catch {
+        return cached;
+      }
+    }
+
+    return cached;
+  }
+
   // Active user's confirmed RSVP state
   public getActiveUserRsvp(): RsvpRecord | null {
     try {
