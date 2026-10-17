@@ -179,7 +179,7 @@ export const DeclineMessage: React.FC<DeclineMessageProps> = ({
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder={`Happy 7th Birthday Mattheu! Wish we could be there to race with you!`}
                       rows={3}
-                      className="w-full px-4 py-2.5 bg-[#12121A] border border-white/15 focus:border-[#00D2BE] rounded-xl text-white font-telemetry text-sm outline-none placeholder-[#555566] transition-colors resize-none"
+                      className="w-full px-4 py-2.5 bg-[#12121A] border border-white/20 hover:border-white/35 focus:border-[#00D2BE] rounded-xl text-white font-telemetry text-sm outline-none placeholder-[#555566] transition-colors resize-none cursor-text shadow-inner"
                     />
                   </div>
 

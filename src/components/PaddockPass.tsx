@@ -17,7 +17,8 @@ import {
   XCircle, 
   ExternalLink,
   Users,
-  Shirt
+  Shirt,
+  MessageSquareHeart
 } from 'lucide-react';
 
 export const PaddockPass: React.FC = () => {
@@ -327,12 +328,15 @@ export const PaddockPass: React.FC = () => {
                 </span>
               </button>
 
-              {/* Subtle DNF / Can't make it link (Opens Decline Pop-up Modal) */}
+              {/* Highlighted Clickable Leave a Message Box */}
               <button
                 onClick={handleOpenDecline}
-                className="mt-4 text-xs font-telemetry text-[#8E8E98] hover:text-white transition-colors cursor-pointer"
+                className="group w-full mt-3.5 py-3 px-5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/20 hover:border-[#FF5E5B]/50 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-[0_0_18px_rgba(255,94,91,0.2)] active:scale-[0.99]"
               >
-                Can't make it? Leave a message
+                <MessageSquareHeart size={15} className="text-[#FF5E5B] group-hover:scale-110 transition-transform shrink-0" />
+                <span className="font-telemetry text-xs text-[#A0A0B0] group-hover:text-white transition-colors">
+                  Can't make it? <span className="text-[#FF5E5B] group-hover:text-[#ff7875] font-bold underline underline-offset-2">Leave a Birthday Message</span>
+                </span>
               </button>
             </div>
           )}
