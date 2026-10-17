@@ -5,7 +5,7 @@ import { M7Logo } from './M7Logo';
 import { PaddockPassBackdrop } from './PaddockPassBackdrop';
 import { DriverRegistration } from './DriverRegistration';
 import { DeclineMessage } from './DeclineMessage';
-import { Calendar, Clock, ArrowRight, MapPin, Navigation, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, MapPin, Navigation, CheckCircle2, Compass } from 'lucide-react';
 
 interface PaddockPassProps {
   onConfirmGridSlot?: () => void;
@@ -167,6 +167,17 @@ export const PaddockPass: React.FC<PaddockPassProps> = ({
                       <Navigation size={12} className="text-[#00D2BE]" />
                       <span className="font-telemetry text-[10px] font-bold hidden sm:inline">WAZE</span>
                     </a>
+                  )}
+                  {onOpenCircuitGuide && (
+                    <button
+                      type="button"
+                      onClick={onOpenCircuitGuide}
+                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[#FFB800]/20 border border-white/10 hover:border-[#FFB800]/40 text-white transition-all cursor-pointer flex items-center gap-1"
+                      title="3D Interactive Route to Venue"
+                    >
+                      <Compass size={12} className="text-[#FFB800]" />
+                      <span className="font-telemetry text-[10px] font-bold">3D ROUTE</span>
+                    </button>
                   )}
                 </div>
               </div>
