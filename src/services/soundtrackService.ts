@@ -13,6 +13,8 @@ class SoundtrackService {
   private listeners: Set<AudioListener> = new Set();
   private isConnected = false;
 
+  public static readonly INTRO_OFFSET_SECONDS = 11.0;
+
   constructor() {
     if (typeof window !== 'undefined') {
       this.initAudio();
@@ -28,6 +30,36 @@ class SoundtrackService {
       this.audio.volume = 0.85;
       this.audio.muted = true; // Initialized muted
       this.audio.preload = 'auto';
+
+      // Cut out the long quiet intro so music starts directly at the energetic racing beat
+      const setStartOffset = () => {
+        if (this.audio && this.audio.currentTime < SoundtrackService.INTRO_OFFSET_SECONDS) {
+          try {
+            this.audio.currentTime = SoundtrackService.INTRO_OFFSET_SECONDS;
+          } catch {
+            // Safe catch
+          }
+        }
+      };
+
+      this.audio.addEventListener('loadedmetadata', setStartOffset);
+      this.audio.addEventListener('canplay', setStartOffset);
+
+      // When the audio loops or restarts, ensure it doesn't replay the quiet 11-second intro
+      this.audio.addEventListener('timeupdate', () => {
+        if (
+          this.audio &&
+          this.audio.currentTime < SoundtrackService.INTRO_OFFSET_SECONDS &&
+          !this.audio.seeking &&
+          this.isPlayingState
+        ) {
+          try {
+            this.audio.currentTime = SoundtrackService.INTRO_OFFSET_SECONDS;
+          } catch {
+            // Safe catch
+          }
+        }
+      });
 
       this.audio.addEventListener('play', () => {
         this.isPlayingState = true;
@@ -116,6 +148,13 @@ class SoundtrackService {
    * Opens trebles immediately (called when introduction starts)
    */
   public openTreble(rampSeconds = 0.4) {
+    if (this.audio && this.audio.currentTime < SoundtrackService.INTRO_OFFSET_SECONDS) {
+      try {
+        this.audio.currentTime = SoundtrackService.INTRO_OFFSET_SECONDS;
+      } catch {
+        // Safe catch
+      }
+    }
     this.setMuffled(false, rampSeconds);
   }
 
@@ -129,6 +168,13 @@ class SoundtrackService {
   public async play(): Promise<boolean> {
     if (!this.audio) return false;
     await this.resumeContext();
+    if (this.audio.currentTime < SoundtrackService.INTRO_OFFSET_SECONDS) {
+      try {
+        this.audio.currentTime = SoundtrackService.INTRO_OFFSET_SECONDS;
+      } catch {
+        // Safe catch
+      }
+    }
     try {
       this.audio.muted = this.isMutedState;
       await this.audio.play();

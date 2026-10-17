@@ -57,8 +57,7 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
 
   return (
     <div
-      onClick={handleSkip}
-      className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-[#09090D] relative overflow-hidden select-none cursor-pointer px-4"
+      className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-[#09090D] relative overflow-hidden select-none px-4"
     >
       {/* 3D POV Race Track & Battling F1 Cars Background */}
       <RaceTrackPOV />
@@ -85,38 +84,38 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
       </button>
 
       {/* Central Dramatic Animation Container - Elevated for cinematic depth over racing track */}
-      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center justify-center text-center pt-14 sm:pt-20 pb-8 min-h-[280px] -translate-y-4 sm:-translate-y-8">
+      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center justify-center text-center pt-6 sm:pt-10 pb-4 min-h-[240px] -translate-y-8 sm:-translate-y-14 px-4">
         <AnimatePresence mode="wait">
           {/* BEAT 1: "MATTHEU AMARI" */}
           {stage === 'name' && (
             <motion.div
               key="stage-name"
-              initial={{ opacity: 0, scale: 1.3, y: 15 }}
+              initial={{ opacity: 0, scale: 1.15, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.85, filter: 'blur(10px)' }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center px-2"
+              exit={{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center px-2 w-full"
             >
               <motion.div
-                initial={{ opacity: 0, y: -8 }}
+                initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="flex items-center gap-1.5 sm:gap-2 text-[#E10600] font-telemetry text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.35em] uppercase font-bold mb-3 sm:mb-4 bg-black/60 px-3 sm:px-4 py-1.5 rounded-full border border-[#E10600]/30 backdrop-blur-md shadow-[0_0_20px_rgba(225,6,0,0.3)]"
+                className="flex items-center gap-1.5 sm:gap-2 text-[#E10600] font-telemetry text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.3em] uppercase font-bold mb-3 bg-black/60 px-3.5 sm:px-4 py-1 rounded-full border border-[#E10600]/30 backdrop-blur-md shadow-[0_0_20px_rgba(225,6,0,0.3)]"
               >
-                <Zap size={13} className="fill-[#E10600] text-[#E10600]" />
+                <Zap size={12} className="fill-[#E10600] text-[#E10600]" />
                 <span className="hidden xs:inline">CHAMPIONSHIP DRIVER • </span>
                 <span>POLE POSITION</span>
               </motion.div>
 
-              <h1 className="font-f1-head text-3xl sm:text-5xl md:text-7xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_40px_rgba(225,6,0,0.8)]">
+              <h1 className="font-f1-head text-3xl sm:text-5xl md:text-6xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_40px_rgba(225,6,0,0.85)] leading-tight">
                 {EVENT_CONFIG.celebrantName}
               </h1>
 
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="font-telemetry text-xs sm:text-sm tracking-[0.3em] text-[#8E8E98] uppercase font-semibold mt-4"
+                transition={{ delay: 0.4 }}
+                className="font-telemetry text-[10px] sm:text-xs tracking-[0.3em] text-[#8E8E98] uppercase font-semibold mt-3 sm:mt-4"
               >
                 2026 WORLD CHAMPIONSHIP
               </motion.p>
@@ -127,22 +126,22 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
           {stage === 'turning' && (
             <motion.div
               key="stage-turning"
-              initial={{ opacity: 0, scale: 0.8, letterSpacing: '0.1em' }}
-              animate={{ opacity: 1, scale: 1, letterSpacing: '0.28em' }}
-              exit={{ opacity: 0, scale: 1.25, filter: 'blur(10px)' }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center"
+              initial={{ opacity: 0, scale: 0.85, letterSpacing: '0.1em' }}
+              animate={{ opacity: 1, scale: 1, letterSpacing: '0.25em' }}
+              exit={{ opacity: 0, scale: 1.15, filter: 'blur(8px)' }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center w-full"
             >
-              <div className="flex items-center gap-2 text-[#00D2BE] font-telemetry text-xs tracking-[0.3em] uppercase font-bold mb-3 bg-black/60 px-4 py-1.5 rounded-full border border-[#00D2BE]/30 backdrop-blur-md">
-                <Flag size={14} className="text-[#00D2BE]" />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[#00D2BE] font-telemetry text-[10px] sm:text-xs tracking-[0.25em] uppercase font-bold mb-3 bg-black/60 px-3.5 sm:px-4 py-1 rounded-full border border-[#00D2BE]/30 backdrop-blur-md shadow-[0_0_20px_rgba(0,210,190,0.3)]">
+                <Flag size={12} className="text-[#00D2BE]" />
                 <span>OFFICIAL RACING MILESTONE</span>
               </div>
 
-              <h2 className="font-f1-head text-3xl sm:text-5xl md:text-6xl font-black italic text-[#00D2BE] uppercase tracking-[0.25em] drop-shadow-[0_0_35px_rgba(0,210,190,0.8)]">
+              <h2 className="font-f1-head text-2xl sm:text-4xl md:text-5xl font-black italic text-[#00D2BE] uppercase tracking-[0.22em] drop-shadow-[0_0_35px_rgba(0,210,190,0.8)] leading-tight">
                 IS TURNING
               </h2>
 
-              <p className="font-telemetry text-xs tracking-[0.3em] text-[#8E8E98] uppercase font-semibold mt-4">
+              <p className="font-telemetry text-[10px] sm:text-xs tracking-[0.3em] text-[#8E8E98] uppercase font-semibold mt-3 sm:mt-4">
                 FULL SPEED INTO THE NEXT CHAPTER
               </p>
             </motion.div>
@@ -152,68 +151,71 @@ export const DramaticIntro: React.FC<DramaticIntroProps> = ({ onComplete }) => {
           {stage === 'number' && (
             <motion.div
               key="stage-number"
-              initial={{ opacity: 0, scale: 2.5, rotate: -6 }}
+              initial={{ opacity: 0, scale: 2.0, rotate: -4 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.65, filter: 'blur(12px)' }}
-              transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
-              className="flex flex-col items-center"
+              exit={{ opacity: 0, scale: 0.7, filter: 'blur(10px)' }}
+              transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+              className="flex flex-col items-center w-full"
             >
-              <div className="flex items-center gap-2 text-[#FFB800] font-telemetry text-xs tracking-[0.3em] uppercase mb-2 font-bold bg-black/60 px-4 py-1.5 rounded-full border border-[#FFB800]/30 backdrop-blur-md">
-                <Trophy size={14} className="text-[#FFB800]" />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[#FFB800] font-telemetry text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-2 font-bold bg-black/60 px-3.5 sm:px-4 py-1 rounded-full border border-[#FFB800]/30 backdrop-blur-md shadow-[0_0_20px_rgba(255,184,0,0.3)]">
+                <Trophy size={12} className="text-[#FFB800]" />
                 <span>CHAMPIONSHIP RACE NUMBER</span>
               </div>
 
-              <div className="font-f1-head text-9xl sm:text-[140px] md:text-[170px] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white via-[#FF3333] to-[#E10600] leading-none drop-shadow-[0_0_65px_rgba(225,6,0,1)] animate-pulse">
+              <div className="font-f1-head text-7xl sm:text-8xl md:text-9xl font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white via-[#FF3333] to-[#E10600] leading-none drop-shadow-[0_0_60px_rgba(225,6,0,0.95)] animate-pulse">
                 7
               </div>
             </motion.div>
           )}
 
-          {/* BEAT 4: FULL GRAND ASSEMBLE "MATTHEU AMARI IS TURNING 7!" */}
+          {/* BEAT 4: FULL ASSEMBLE "MATTHEU AMARI IS TURNING 7!" - BALANCED HERO FOCUS */}
           {stage === 'full' && (
             <motion.div
               key="stage-full"
-              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              initial={{ opacity: 0, scale: 0.92, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center"
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center w-full px-2"
             >
-              {/* Telemetry Badge */}
+              {/* Telemetry Ribbon */}
               <motion.div
-                initial={{ opacity: 0, y: -8 }}
+                initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="px-4 py-1.5 rounded-full bg-black/75 border border-[#E10600]/60 text-[#FF4D4D] font-telemetry text-xs font-bold tracking-[0.25em] uppercase mb-3 flex items-center gap-2 shadow-[0_0_25px_rgba(225,6,0,0.5)] backdrop-blur-md"
+                transition={{ delay: 0.15 }}
+                className="px-3.5 sm:px-4 py-1 rounded-full bg-black/60 border border-[#E10600]/40 text-[#FF4D4D] font-telemetry text-[10px] sm:text-xs font-bold tracking-[0.25em] uppercase mb-2 sm:mb-3 flex items-center gap-2 shadow-[0_0_20px_rgba(225,6,0,0.4)] backdrop-blur-md"
               >
                 <span className="w-2 h-2 rounded-full bg-[#E10600] animate-ping" />
-                OFFICIAL GRAND PRIX INVITATION
+                OFFICIAL GRAND PRIX INVITATION • POLE POSITION
               </motion.div>
 
-              {/* Name */}
-              <h1 className="font-f1-head text-2xl sm:text-4xl md:text-6xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_35px_rgba(255,255,255,0.6)]">
+              {/* Main Celebrant Name - LARGEST Hero Typography */}
+              <h1 className="font-f1-head text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black italic tracking-tight text-white uppercase drop-shadow-[0_0_40px_rgba(225,6,0,0.9)] leading-tight">
                 {EVENT_CONFIG.celebrantName}
               </h1>
 
-              {/* IS TURNING 7! */}
+              {/* IS TURNING 7! - Complementary Milestone Lockup */}
               <div className="mt-2 sm:mt-3 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-                <span className="font-telemetry text-sm sm:text-xl md:text-3xl font-extrabold tracking-[0.2em] sm:tracking-[0.25em] text-[#00D2BE] uppercase drop-shadow-[0_0_20px_rgba(0,210,190,0.6)]">
+                <span className="font-telemetry text-sm sm:text-xl md:text-2xl font-extrabold tracking-[0.22em] sm:tracking-[0.28em] text-[#00D2BE] uppercase drop-shadow-[0_0_20px_rgba(0,210,190,0.8)]">
                   IS TURNING
                 </span>
-                <span className="font-f1-head text-3xl sm:text-5xl md:text-7xl font-black italic text-[#E10600] uppercase drop-shadow-[0_0_45px_rgba(225,6,0,1)] animate-pulse">
+                <span className="font-f1-head text-3xl sm:text-5xl md:text-6xl font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white via-[#FF3333] to-[#E10600] uppercase drop-shadow-[0_0_45px_rgba(225,6,0,1)] animate-pulse leading-none">
                   7!
                 </span>
               </div>
 
-              {/* Subtitle */}
-              <motion.p
+              {/* Subtitle Telemetry */}
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="font-telemetry text-xs sm:text-sm tracking-[0.35em] text-[#8E8E98] uppercase font-bold mt-4"
+                transition={{ delay: 0.3 }}
+                className="mt-3 sm:mt-4 flex items-center justify-center gap-2 sm:gap-3 font-telemetry text-[10px] sm:text-xs tracking-[0.28em] text-[#8E8E98] uppercase font-bold"
               >
-                FORMULA 7 WORLD CHAMPIONSHIP
-              </motion.p>
+                <span className="text-[#E10600]">M7</span>
+                <span>WORLD CHAMPIONSHIP</span>
+                <span>•</span>
+                <span className="text-[#FFB800]">2026</span>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
