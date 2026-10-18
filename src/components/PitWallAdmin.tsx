@@ -1318,85 +1318,79 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                 </button>
 
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-2 pt-1 pr-8">
-                  <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 shrink-0">
-                    <ShieldAlert size={24} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-telemetry font-black tracking-widest uppercase">
-                        RACE CONTROL // FIA STEWARDS
-                      </span>
-                      <span className="text-[11px] font-telemetry text-[#8E8E98]">
-                        HEADCOUNT INTEGRITY & DEDUPLICATION
-                      </span>
+                <div className="flex items-start justify-between gap-4 mb-4 pt-1 pr-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 shrink-0">
+                      <ShieldAlert size={22} />
                     </div>
-                    <h2 className="font-f1-head text-lg sm:text-2xl font-black text-white uppercase italic">
-                      GUEST DUPLICATE AUDIT & DEDUPLICATION
-                    </h2>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-telemetry font-black tracking-widest uppercase">
+                          FIA STEWARDS
+                        </span>
+                        <span className="text-[11px] font-telemetry text-[#8E8E98]">
+                          DUPLICATE HEADCOUNT AUDIT
+                        </span>
+                      </div>
+                      <h2 className="font-f1-head text-lg sm:text-xl font-black text-white uppercase italic tracking-wide mt-0.5">
+                        GUEST DEDUPLICATION STATION
+                      </h2>
+                      <p className="font-telemetry text-xs text-[#8E8E98] mt-0.5">
+                        Reconcile +1 accompanying guests who also registered as primary drivers to ensure exact catering counts.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <p className="font-telemetry text-xs text-[#8E8E98] mb-4">
-                  Whenever an accompanying guest (+1) has also submitted their own primary driver RSVP, deduplicating them marks their +1 entry as duplicate and deducts them from the host's headcount. This guarantees catering & venue seat counts remain exact without double-counting.
-                </p>
+                {/* Streamlined Filter & Telemetry Strip */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-white/[0.08]">
+                  {/* Filter Tabs */}
+                  <div className="flex items-center gap-1 p-1 bg-[#101018] rounded-lg border border-white/10 w-fit">
+                    <button
+                      type="button"
+                      onClick={() => setConflictFilter('all')}
+                      className={`px-3 py-1 rounded-md text-xs font-telemetry font-bold transition-all cursor-pointer ${
+                        conflictFilter === 'all'
+                          ? 'bg-white/20 text-white'
+                          : 'text-[#8E8E98] hover:text-white'
+                      }`}
+                    >
+                      ALL ({conflicts.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConflictFilter('pending')}
+                      className={`px-3 py-1 rounded-md text-xs font-telemetry font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        conflictFilter === 'pending'
+                          ? 'bg-amber-500 text-black font-black'
+                          : 'text-amber-400/80 hover:text-amber-300'
+                      }`}
+                    >
+                      {unresolvedConflicts.length > 0 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                      )}
+                      <span>PENDING ({unresolvedConflicts.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConflictFilter('resolved')}
+                      className={`px-3 py-1 rounded-md text-xs font-telemetry font-bold transition-all cursor-pointer ${
+                        conflictFilter === 'resolved'
+                          ? 'bg-[#00D2BE] text-black font-black'
+                          : 'text-[#8E8E98] hover:text-white'
+                      }`}
+                    >
+                      RESOLVED ({resolvedConflicts.length})
+                    </button>
+                  </div>
 
-                {/* Telemetry Status Strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5 font-telemetry text-xs">
-                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
-                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">TOTAL DETECTED</span>
-                    <span className="text-white font-f1-head font-bold text-lg">{conflicts.length}</span>
-                  </div>
-                  <div className={`p-2.5 rounded-xl border ${unresolvedConflicts.length > 0 ? 'bg-amber-950/40 border-amber-500/60 text-amber-300' : 'bg-[#101018] border-white/10 text-white'}`}>
-                    <span className="text-[10px] uppercase block font-bold">PENDING VERIFICATION</span>
-                    <span className="font-f1-head font-bold text-lg">{unresolvedConflicts.length}</span>
-                  </div>
-                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
-                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">DEDUPLICATED (SAVED)</span>
-                    <span className="text-[#00D2BE] font-f1-head font-bold text-lg">{deduplicatedConflicts.length}</span>
-                  </div>
-                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
-                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">CONFIRMED SEPARATE</span>
-                    <span className="text-emerald-400 font-f1-head font-bold text-lg">{resolvedConflicts.length - deduplicatedConflicts.length}</span>
-                  </div>
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1.5 p-1 bg-[#101018] rounded-full border border-white/10 mb-4 w-full sm:w-auto overflow-x-auto">
-                  <button
-                    type="button"
-                    onClick={() => setConflictFilter('all')}
-                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer ${
-                      conflictFilter === 'all'
-                        ? 'bg-[#E10600] text-white shadow-md'
-                        : 'text-[#8E8E98] hover:text-white'
-                    }`}
-                  >
-                    ALL CONFLICTS ({conflicts.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConflictFilter('pending')}
-                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      conflictFilter === 'pending'
-                        ? 'bg-amber-500 text-black shadow-md'
-                        : 'text-[#8E8E98] hover:text-white'
-                    }`}
-                  >
-                    <AlertTriangle size={12} />
-                    <span>PENDING ({unresolvedConflicts.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConflictFilter('resolved')}
-                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer ${
-                      conflictFilter === 'resolved'
-                        ? 'bg-[#00D2BE] text-black shadow-md'
-                        : 'text-[#8E8E98] hover:text-white'
-                    }`}
-                  >
-                    RESOLVED ({resolvedConflicts.length})
-                  </button>
+                  {/* Saved Seats Pill */}
+                  {deduplicatedConflicts.length > 0 && (
+                    <div className="flex items-center gap-1.5 font-telemetry text-xs text-[#00D2BE] bg-[#00D2BE]/10 border border-[#00D2BE]/25 px-2.5 py-1 rounded-md self-start sm:self-auto">
+                      <CheckCircle2 size={13} />
+                      <span>{deduplicatedConflicts.length} duplicate seat{deduplicatedConflicts.length > 1 ? 's' : ''} removed</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* List of Conflicts */}
@@ -1413,120 +1407,137 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           key={conflict.id}
                           className={`p-4 rounded-xl border transition-all ${
                             !conflict.adminVerified
-                              ? 'bg-[#181308] border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                              ? 'bg-[#15120c] border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.12)]'
                               : conflict.isDeduplicated
-                              ? 'bg-[#111617] border-[#00D2BE]/30'
-                              : 'bg-[#101511] border-emerald-500/30'
+                              ? 'bg-[#0f1414] border-[#00D2BE]/30'
+                              : 'bg-[#101410] border-emerald-500/30'
                           }`}
                         >
-                          {/* Card Top: Colliding Name & Badges */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-white/[0.08] pb-2.5">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-f1-head text-base sm:text-lg font-black text-white uppercase italic tracking-wider">
-                                  {conflict.canonicalName}
-                                </span>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-telemetry font-bold uppercase bg-white/10 text-[#C5C5CE]">
-                                  {conflict.type === 'driver_vs_companion'
-                                    ? 'Driver ↔ Accompany Collision'
-                                    : conflict.type === 'companion_vs_companion'
-                                    ? 'Accompany ↔ Accompany Collision'
-                                    : 'Duplicate Driver Registration'}
-                                </span>
-                              </div>
+                          {/* Top: Name & Verification State */}
+                          <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-white/[0.06]">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  !conflict.adminVerified
+                                    ? 'bg-amber-400 animate-ping'
+                                    : conflict.isDeduplicated
+                                    ? 'bg-[#00D2BE]'
+                                    : 'bg-emerald-400'
+                                }`}
+                              />
+                              <h3 className="font-f1-head text-base sm:text-lg font-black text-white uppercase italic tracking-wide truncate">
+                                {conflict.canonicalName}
+                              </h3>
+                              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-telemetry font-bold uppercase bg-white/5 text-[#8E8E98] border border-white/10">
+                                {conflict.type === 'driver_vs_companion'
+                                  ? 'Driver ↔ Companion Overlap'
+                                  : conflict.type === 'companion_vs_companion'
+                                  ? 'Dual Companion Overlap'
+                                  : 'Duplicate Driver'}
+                              </span>
                             </div>
 
                             <div>
                               {!conflict.adminVerified ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 text-[10px] font-telemetry font-bold animate-pulse">
-                                  <AlertTriangle size={11} /> NEEDS VERIFICATION
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[10px] font-telemetry font-bold">
+                                  <AlertTriangle size={11} />
+                                  <span>NEEDS AUDIT</span>
                                 </span>
                               ) : conflict.isDeduplicated ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#00D2BE]/15 text-[#00D2BE] border border-[#00D2BE]/40 text-[10px] font-telemetry font-bold">
-                                  <ShieldCheck size={11} /> DEDUPLICATED (EXCLUDED FROM +1 COUNT)
+                                  <ShieldCheck size={11} />
+                                  <span>DEDUPLICATED (1 SEAT)</span>
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-telemetry font-bold">
-                                  <Users size={11} /> CONFIRMED SEPARATE GUESTS (COUNTED)
+                                  <Users size={11} />
+                                  <span>COUNTED AS 2 SEATS</span>
                                 </span>
                               )}
                             </div>
                           </div>
 
-                          {/* Comparison Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 font-telemetry text-xs">
-                            {/* Source A */}
-                            <div className="p-3 bg-black/40 rounded-lg border border-white/10">
-                              <div className="flex items-center justify-between text-[10px] text-[#8E8E98] uppercase font-bold mb-1">
-                                <span>SOURCE A // REGISTERED PRIMARY DRIVER</span>
-                                <span className="text-[#00D2BE]">COUNTS AS 1 SEAT</span>
+                          {/* Relationship Link (Clean horizontal flow instead of nested cards) */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/30 p-3 rounded-lg border border-white/[0.06] font-telemetry text-xs mb-3">
+                            {/* Source 1: Primary Registration */}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-bold text-[#8E8E98] uppercase tracking-wider mb-0.5">
+                                PRIMARY REGISTRATION
                               </div>
-                              <div className="text-sm font-bold text-white mb-0.5">
+                              <div className="text-white font-bold truncate">
                                 {conflict.primary.driverName}
                               </div>
-                              <div className="text-[11px] text-[#8E8E98]">
-                                Relationship: <span className="text-[#C5C5CE]">{conflict.primary.relationship}</span>
-                              </div>
-                              <div className="text-[10px] text-[#6E6E78] mt-1">
-                                RSVP Date: {new Date(conflict.primary.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              <div className="text-[11px] text-[#A5A5B2] truncate">
+                                {conflict.primary.relationship || 'Guest'} • Registered Driver
                               </div>
                             </div>
 
-                            {/* Source B */}
-                            <div className="p-3 bg-black/40 rounded-lg border border-white/10">
-                              <div className="flex items-center justify-between text-[10px] text-[#8E8E98] uppercase font-bold mb-1">
-                                <span>SOURCE B // LISTED AS ACCOMPANY (+1)</span>
-                                <span className={conflict.isDeduplicated ? 'text-amber-400 font-bold' : 'text-[#FFB800]'}>
-                                  {conflict.isDeduplicated ? 'EXCLUDED (0 SEATS)' : 'CURRENTLY +1 SEAT'}
-                                </span>
+                            {/* Center Divider / Link Indicator */}
+                            <div className="flex sm:flex-col items-center justify-center gap-1 text-[#8E8E98] shrink-0 sm:px-3">
+                              <div className="hidden sm:block w-px h-2.5 bg-white/10" />
+                              <span className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] font-bold border border-white/10 text-[#A5A5B2] uppercase tracking-wider">
+                                MATCHES
+                              </span>
+                              <div className="hidden sm:block w-px h-2.5 bg-white/10" />
+                            </div>
+
+                            {/* Source 2: Accompany Pass */}
+                            <div className="flex-1 min-w-0 sm:text-right">
+                              <div className="text-[10px] font-bold text-[#8E8E98] uppercase tracking-wider mb-0.5">
+                                ACCOMPANY PASS (+1)
                               </div>
-                              <div className="text-sm font-bold text-white mb-0.5">
-                                {conflict.canonicalName}
+                              <div className="text-white font-bold truncate">
+                                Ticket of <span className="text-[#00D2BE]">{conflict.conflicting.driverName}</span>
                               </div>
-                              <div className="text-[11px] text-[#8E8E98]">
-                                Added on ticket of: <span className="text-[#00D2BE] font-bold">{conflict.conflicting.driverName}</span> ({conflict.conflicting.companionType || 'Adult'})
-                              </div>
-                              <div className="text-[10px] text-[#6E6E78] mt-1">
-                                RSVP Date: {new Date(conflict.conflicting.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              <div className="text-[11px] text-[#A5A5B2] truncate">
+                                {conflict.conflicting.companionType || 'Adult'} Companion
                               </div>
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2.5 border-t border-white/[0.06]">
+                          {/* Actions */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-1">
                             <div className="text-[11px] font-telemetry text-[#8E8E98]">
-                              {!conflict.adminVerified
-                                ? 'Is this the same person? Choose an action to update event headcount:'
-                                : conflict.isDeduplicated
-                                ? `Deduplicated on ${conflict.conflicting.driverName}'s ticket. Not counted twice.`
-                                : `Both ${conflict.primary.driverName} and ${conflict.conflicting.driverName}'s accompany are counted.`}
+                              {!conflict.adminVerified ? (
+                                <span className="text-amber-300/90">
+                                  Currently double-counted (2 seats). Deduplicate to count as 1 seat:
+                                </span>
+                              ) : conflict.isDeduplicated ? (
+                                <span className="text-[#00D2BE]">
+                                  ✓ Deduplicated: Excluded from {conflict.conflicting.driverName}'s pass.
+                                </span>
+                              ) : (
+                                <span className="text-emerald-400">
+                                  ✓ Verified: Counted as two separate individuals with same name.
+                                </span>
+                              )}
                             </div>
 
-                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 w-full sm:w-auto">
                               {!conflict.adminVerified ? (
                                 <>
                                   <button
                                     type="button"
                                     disabled={isResolvingConflict}
                                     onClick={() => handleDeduplicateConflict(conflict)}
-                                    className="px-3.5 py-1.5 bg-[#00D2BE] hover:bg-[#1fe2ce] text-black font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(0,210,190,0.3)] disabled:opacity-50"
+                                    className="flex-1 sm:flex-none px-3.5 py-1.5 bg-[#00D2BE] hover:bg-[#1fe2ce] text-black font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,210,190,0.35)] disabled:opacity-50"
                                   >
                                     <ShieldCheck size={13} />
-                                    <span>DEDUPLICATE (EXCLUDE FROM +1)</span>
+                                    <span>SAME PERSON (EXCLUDE +1)</span>
                                   </button>
 
                                   <button
                                     type="button"
                                     disabled={isResolvingConflict}
                                     onClick={() => handleConfirmSeparateConflict(conflict)}
-                                    className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center gap-1.5 transition-all border border-white/20 disabled:opacity-50"
+                                    className="flex-1 sm:flex-none px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-white font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center justify-center gap-1.5 transition-all border border-white/15 disabled:opacity-50"
                                   >
                                     <Users size={13} />
-                                    <span>COUNT BOTH (DIFFERENT PERSONS)</span>
+                                    <span>COUNT BOTH (+2)</span>
                                   </button>
                                 </>
                               ) : (
-                                <>
+                                <div className="flex items-center gap-2">
                                   <button
                                     type="button"
                                     disabled={isResolvingConflict}
@@ -1544,11 +1555,11 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                                     type="button"
                                     disabled={isResolvingConflict}
                                     onClick={() => handleResetConflict(conflict)}
-                                    className="px-3 py-1 text-[#8E8E98] hover:text-white text-xs font-telemetry rounded-full cursor-pointer transition-colors"
+                                    className="px-2.5 py-1 text-[#8E8E98] hover:text-white text-xs font-telemetry cursor-pointer transition-colors"
                                   >
                                     Reset
                                   </button>
-                                </>
+                                </div>
                               )}
                             </div>
                           </div>
