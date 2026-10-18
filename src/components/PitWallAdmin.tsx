@@ -31,6 +31,7 @@ import {
 import { 
   detectConflicts, 
   calculateRecordHeadcount, 
+  normalizeName,
   type DetectedConflict 
 } from '../services/duplicateDetection';
 
@@ -285,8 +286,6 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
   // Conflict Detection Engine
   const conflicts = useMemo(() => detectConflicts(rsvps), [rsvps]);
   const unresolvedConflicts = useMemo(() => conflicts.filter((c) => !c.adminVerified), [conflicts]);
-  const resolvedConflicts = useMemo(() => conflicts.filter((c) => c.adminVerified), [conflicts]);
-  const deduplicatedConflicts = useMemo(() => conflicts.filter((c) => c.isDeduplicated), [conflicts]);
 
   // Conflict Resolution: Deduplicate (Exclude from Headcount)
   const handleDeduplicateConflict = async (conflict: DetectedConflict) => {
@@ -513,20 +512,163 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     };
   }, [rsvps]);
 
+  // Duplicate Instances Engine:
+  // Groups duplicates by individual name instance.
+  // If a name is repeated 2, 3, or more times across registrations, it is counted as 1 duplicate instance.
+  const duplicateInstances = useMemo(() => {
+    // Map of normalized name -> occurrences across grid
+    const nameMap = new Map<
+      string,
+      {
+        canonicalName: string;
+        occurrences: {
+          recordId: string;
+          driverName: string;
+          isDriver: boolean;
+          companionId?: string;
+          isDuplicate?: boolean;
+          adminVerified?: boolean;
+        }[];
+      }
+    >();
+
+    rsvps.forEach((record) => {
+      // Primary driver
+      const driverNorm = normalizeName(record.guest_name);
+      if (driverNorm && driverNorm.length >= 2) {
+        const entry = nameMap.get(driverNorm) || {
+          canonicalName: record.guest_name.trim(),
+          occurrences: [],
+        };
+        entry.occurrences.push({
+          recordId: record.id,
+          driverName: record.guest_name,
+          isDriver: true,
+          isDuplicate: record.isDuplicate,
+          adminVerified: record.adminVerified,
+        });
+        nameMap.set(driverNorm, entry);
+      }
+
+      // Companions
+      if (Array.isArray(record.companions)) {
+        record.companions.forEach((comp) => {
+          const compNorm = normalizeName(comp.fullName);
+          if (compNorm && compNorm.length >= 2) {
+            const entry = nameMap.get(compNorm) || {
+              canonicalName: comp.fullName.trim(),
+              occurrences: [],
+            };
+            entry.occurrences.push({
+              recordId: record.id,
+              driverName: record.guest_name,
+              isDriver: false,
+              companionId: comp.id,
+              isDuplicate: comp.isDuplicate,
+              adminVerified: comp.adminVerified,
+            });
+            nameMap.set(compNorm, entry);
+          }
+        });
+      }
+    });
+
+    // Reconcile with any pair-wise conflicts detected by detectConflicts
+    conflicts.forEach((c) => {
+      const norm = normalizeName(c.canonicalName);
+      if (norm && !nameMap.has(norm)) {
+        nameMap.set(norm, {
+          canonicalName: c.canonicalName,
+          occurrences: [
+            {
+              recordId: c.primary.recordId,
+              driverName: c.primary.driverName,
+              isDriver: c.primary.isDriver,
+              companionId: c.primary.companionId,
+              adminVerified: c.adminVerified,
+              isDuplicate: false,
+            },
+            {
+              recordId: c.conflicting.recordId,
+              driverName: c.conflicting.driverName,
+              isDriver: c.conflicting.isDriver,
+              companionId: c.conflicting.companionId,
+              adminVerified: c.adminVerified,
+              isDuplicate: c.isDeduplicated,
+            },
+          ],
+        });
+      }
+    });
+
+    interface DuplicateInstance {
+      normalizedName: string;
+      canonicalName: string;
+      occurrencesCount: number; // e.g. 3 times repeated
+      recordIds: Set<string>;
+      isPending: boolean;
+      isDeduplicated: boolean;
+    }
+
+    const instances: DuplicateInstance[] = [];
+
+    nameMap.forEach((entry, norm) => {
+      const isMulti = entry.occurrences.length > 1;
+      const isFlagged = entry.occurrences.some((o) => o.isDuplicate);
+      const hasConflict = conflicts.some((c) => normalizeName(c.canonicalName) === norm);
+
+      if (isMulti || isFlagged || hasConflict) {
+        const recordIds = new Set<string>();
+        entry.occurrences.forEach((o) => recordIds.add(o.recordId));
+
+        // Pair-wise conflicts for this normalized name
+        const relatedConflicts = conflicts.filter((c) => normalizeName(c.canonicalName) === norm);
+
+        const isPending =
+          relatedConflicts.length > 0
+            ? relatedConflicts.some((c) => !c.adminVerified)
+            : entry.occurrences.some((o) => !o.adminVerified && !o.isDuplicate);
+
+        const isDeduplicated =
+          entry.occurrences.some((o) => o.isDuplicate) ||
+          relatedConflicts.some((c) => c.isDeduplicated);
+
+        instances.push({
+          normalizedName: norm,
+          canonicalName: entry.canonicalName,
+          occurrencesCount: entry.occurrences.length,
+          recordIds,
+          isPending,
+          isDeduplicated,
+        });
+      }
+    });
+
+    return instances;
+  }, [rsvps, conflicts]);
+
+  const duplicateInstancesCount = duplicateInstances.length;
+  const unresolvedDuplicateInstancesCount = useMemo(
+    () => duplicateInstances.filter((inst) => inst.isPending).length,
+    [duplicateInstances]
+  );
+  const resolvedDuplicateInstancesCount = useMemo(
+    () => duplicateInstances.filter((inst) => !inst.isPending).length,
+    [duplicateInstances]
+  );
+  const deduplicatedInstancesCount = useMemo(
+    () => duplicateInstances.filter((inst) => inst.isDeduplicated).length,
+    [duplicateInstances]
+  );
+
   // Set of record IDs involved in duplicate conflicts or having deduplicated companions
   const conflictRecordIds = useMemo(() => {
     const ids = new Set<string>();
-    conflicts.forEach((c) => {
-      ids.add(c.primary.recordId);
-      ids.add(c.conflicting.recordId);
-    });
-    rsvps.forEach((r) => {
-      if (r.isDuplicate || (Array.isArray(r.companions) && r.companions.some((comp) => comp.isDuplicate))) {
-        ids.add(r.id);
-      }
+    duplicateInstances.forEach((inst) => {
+      inst.recordIds.forEach((id) => ids.add(id));
     });
     return ids;
-  }, [conflicts, rsvps]);
+  }, [duplicateInstances]);
 
   const filteredRsvps = useMemo(() => {
     return rsvps.filter((r) => {
@@ -730,21 +872,21 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
               <button
                 onClick={() => setShowConflictModal(true)}
                 className={`px-3 py-2 rounded-lg text-xs font-telemetry font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                  unresolvedConflicts.length > 0
+                  unresolvedDuplicateInstancesCount > 0
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.35)] animate-pulse'
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
                 }`}
                 title="Verify duplicates across drivers and accompanies"
               >
-                {unresolvedConflicts.length > 0 ? (
+                {unresolvedDuplicateInstancesCount > 0 ? (
                   <AlertTriangle size={14} className="text-amber-400 shrink-0" />
                 ) : (
                   <ShieldCheck size={14} className="text-[#00D2BE] shrink-0" />
                 )}
                 <span>DUPLICATE AUDIT</span>
-                {unresolvedConflicts.length > 0 && (
+                {unresolvedDuplicateInstancesCount > 0 && (
                   <span className="px-1.5 py-0.2 bg-amber-500 text-black text-[10px] font-black rounded-full">
-                    {unresolvedConflicts.length}
+                    {unresolvedDuplicateInstancesCount}
                   </span>
                 )}
               </button>
@@ -854,17 +996,21 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                   <span className="text-white font-bold">{stats.confirmedDrivers} Drivers</span>
                   <span className="text-[#00D2BE] font-bold">{stats.attendingCompanions} Crew</span>
                 </div>
-                {stats.deduplicatedCount > 0 && (
+                {deduplicatedInstancesCount > 0 && (
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowConflictModal(true);
                     }}
                     className="flex items-center gap-1 text-[10px] font-telemetry text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25 cursor-pointer hover:bg-amber-500/20 transition-colors mt-1"
-                    title="Duplicate companions excluded from headcount"
+                    title="Duplicate instances excluded from headcount"
                   >
                     <ShieldCheck size={11} className="shrink-0 text-amber-400" />
-                    <span>{stats.deduplicatedCount} duplicate excluded</span>
+                    <span>
+                      {deduplicatedInstancesCount === 1
+                        ? '1 duplicate excluded'
+                        : `${deduplicatedInstancesCount} duplicates excluded`}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1009,7 +1155,7 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                 >
                   <span>DECLINED ({stats.dnfDrivers})</span>
                 </button>
-                {conflictRecordIds.size > 0 && (
+                {duplicateInstancesCount > 0 && (
                   <button
                     onClick={() => setFilterTab('conflicts')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
@@ -1018,8 +1164,8 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                         : 'text-amber-400 hover:text-amber-300'
                     }`}
                   >
-                    <AlertTriangle size={12} className={unresolvedConflicts.length > 0 ? 'text-amber-400 animate-pulse' : ''} />
-                    <span>DUPLICATES ({conflictRecordIds.size})</span>
+                    <AlertTriangle size={12} className={unresolvedDuplicateInstancesCount > 0 ? 'text-amber-400 animate-pulse' : ''} />
+                    <span>DUPLICATES ({duplicateInstancesCount})</span>
                   </button>
                 )}
               </div>
@@ -1630,7 +1776,7 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           : 'text-[#8E8E98] hover:text-white'
                       }`}
                     >
-                      ALL ({conflicts.length})
+                      ALL ({duplicateInstancesCount})
                     </button>
                     <button
                       type="button"
@@ -1641,10 +1787,10 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           : 'text-amber-400/80 hover:text-amber-300'
                       }`}
                     >
-                      {unresolvedConflicts.length > 0 && (
+                      {unresolvedDuplicateInstancesCount > 0 && (
                         <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
                       )}
-                      <span>PENDING ({unresolvedConflicts.length})</span>
+                      <span>PENDING ({unresolvedDuplicateInstancesCount})</span>
                     </button>
                     <button
                       type="button"
@@ -1655,15 +1801,15 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           : 'text-[#8E8E98] hover:text-white'
                       }`}
                     >
-                      RESOLVED ({resolvedConflicts.length})
+                      RESOLVED ({resolvedDuplicateInstancesCount})
                     </button>
                   </div>
 
                   {/* Saved Seats Pill */}
-                  {deduplicatedConflicts.length > 0 && (
+                  {deduplicatedInstancesCount > 0 && (
                     <div className="flex items-center gap-1.5 font-telemetry text-xs text-[#00D2BE] bg-[#00D2BE]/10 border border-[#00D2BE]/25 px-2.5 py-1 rounded-md self-start sm:self-auto">
                       <CheckCircle2 size={13} />
-                      <span>{deduplicatedConflicts.length} duplicate seat{deduplicatedConflicts.length > 1 ? 's' : ''} removed</span>
+                      <span>{deduplicatedInstancesCount} duplicate instance{deduplicatedInstancesCount > 1 ? 's' : ''} reconciled</span>
                     </div>
                   )}
                 </div>
