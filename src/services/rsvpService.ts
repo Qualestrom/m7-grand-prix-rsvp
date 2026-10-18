@@ -5,6 +5,9 @@ export interface Companion {
   id: string;
   fullName: string;
   type: 'Kid' | 'Adult';
+  isDuplicate?: boolean;
+  adminVerified?: boolean;
+  duplicateOf?: string;
 }
 
 export interface RsvpRecord {
@@ -16,6 +19,8 @@ export interface RsvpRecord {
   total_headcount: number;
   message?: string;
   created_at: string;
+  isDuplicate?: boolean;
+  adminVerified?: boolean;
 }
 
 export type RsvpInput = Omit<RsvpRecord, 'id' | 'created_at'>;

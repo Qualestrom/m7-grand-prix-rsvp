@@ -341,6 +341,21 @@ export const PaddockPass: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Subtle Pit Wall Telemetry Access Link */}
+        <div className="mt-4 text-center">
+          <a
+            href="/admin"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState(null, '', '/admin');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="text-[11px] font-telemetry text-[#8E8E98]/60 hover:text-[#00D2BE] transition-colors inline-flex items-center gap-1 cursor-pointer"
+          >
+            <span>Pit Wall Telemetry & Admin Command</span>
+          </a>
+        </div>
       </motion.div>
 
       {/* 3. Pop-up Modals: Registration & Decline Message (Unified Same Page Experience) */}

@@ -23,8 +23,16 @@ import {
   Check,
   ExternalLink,
   ArrowRight,
-  X
+  X,
+  AlertTriangle,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
+import { 
+  detectConflicts, 
+  calculateRecordHeadcount, 
+  type DetectedConflict 
+} from '../services/duplicateDetection';
 
 interface PitWallAdminProps {
   onBackToApp: () => void;
@@ -38,7 +46,20 @@ export const PitWallAdmin: React.FC<PitWallAdminProps> = ({ onBackToApp }) => {
   const [rsvps, setRsvps] = useState<RsvpRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filterTab, setFilterTab] = useState<'all' | 'attending' | 'dnf'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'attending' | 'dnf' | 'conflicts'>('all');
+
+  // FIA Stewards Duplicate Verification Modal & State
+  const [showConflictModal, setShowConflictModal] = useState<boolean>(false);
+  const [conflictFilter, setConflictFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isResolvingConflict, setIsResolvingConflict] = useState<boolean>(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((cur) => (cur === msg ? null : cur));
+    }, 4500);
+  };
 
   // Supabase Settings Modal
   const [showDbModal, setShowDbModal] = useState<boolean>(false);
@@ -174,17 +195,27 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
 
     setIsSavingEdit(true);
     try {
-      const totalHeadcount = editAttending ? 1 + editCompanions.filter((c) => c.fullName.trim()).length : 0;
+      const validCompanions = editCompanions.filter((c) => c.fullName.trim());
+      const totalHeadcount = editAttending
+        ? calculateRecordHeadcount({
+            ...editingRecord,
+            guest_name: editName.trim(),
+            attending: editAttending,
+            companions: validCompanions,
+          })
+        : 0;
+
       await rsvpService.updateRsvp(editingRecord.id, {
         guest_name: editName.trim(),
         attending: editAttending,
         relationship: editRelationship,
-        companions: editCompanions.filter((c) => c.fullName.trim()),
+        companions: validCompanions,
         total_headcount: totalHeadcount,
         message: editMessage.trim(),
       });
       setIsSavingEdit(false);
       setEditingRecord(null);
+      showToast(`Updated driver registration for "${editName.trim()}".`);
       fetchRsvps();
     } catch (err) {
       console.error('Error updating RSVP:', err);
@@ -196,6 +227,7 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
   const handleDeleteRecord = async (record: RsvpRecord) => {
     if (window.confirm(`Are you sure you want to delete ${record.guest_name} from the grid?`)) {
       await rsvpService.deleteRsvp(record.id);
+      showToast(`Deleted "${record.guest_name}" from the grid.`);
       fetchRsvps();
     }
   };
@@ -207,14 +239,16 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
 
     setIsSavingNew(true);
     try {
-      const companions = newCompanions.filter((c) => c.fullName.trim());
-      const totalHeadcount = newAttending ? 1 + companions.length : 0;
+      const validCompanions = newCompanions.filter((c) => c.fullName.trim());
+      const totalHeadcount = newAttending
+        ? 1 + validCompanions.filter((c) => !c.isDuplicate).length
+        : 0;
 
       await rsvpService.submitRsvp({
         guest_name: newName.trim(),
         relationship: newRelationship,
         attending: newAttending,
-        companions,
+        companions: validCompanions,
         total_headcount: totalHeadcount,
         message: newMessage.trim(),
       });
@@ -224,6 +258,7 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
       setNewName('');
       setNewCompanions([]);
       setNewMessage('');
+      showToast(`Registered driver "${newName.trim()}".`);
       fetchRsvps();
     } catch (err) {
       console.error('Error adding RSVP:', err);
@@ -231,14 +266,182 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     }
   };
 
+  // Conflict Detection Engine
+  const conflicts = useMemo(() => detectConflicts(rsvps), [rsvps]);
+  const unresolvedConflicts = useMemo(() => conflicts.filter((c) => !c.adminVerified), [conflicts]);
+  const resolvedConflicts = useMemo(() => conflicts.filter((c) => c.adminVerified), [conflicts]);
+  const deduplicatedConflicts = useMemo(() => conflicts.filter((c) => c.isDeduplicated), [conflicts]);
+
+  // Conflict Resolution: Deduplicate (Exclude from Headcount)
+  const handleDeduplicateConflict = async (conflict: DetectedConflict) => {
+    setIsResolvingConflict(true);
+    try {
+      if (conflict.type === 'driver_vs_companion' || conflict.type === 'companion_vs_companion') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        const updatedCompanions = (targetRecord.companions || []).map((comp) => {
+          if (comp.id === conflict.conflicting.companionId) {
+            return {
+              ...comp,
+              isDuplicate: true,
+              adminVerified: true,
+              duplicateOf: conflict.primary.driverName,
+            };
+          }
+          return comp;
+        });
+
+        const netHeadcount = calculateRecordHeadcount({
+          ...targetRecord,
+          companions: updatedCompanions,
+        });
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          companions: updatedCompanions,
+          total_headcount: netHeadcount,
+        });
+
+        showToast(`DEDUPLICATED: "${conflict.canonicalName}" on ${targetRecord.guest_name}'s pass excluded from count.`);
+        await fetchRsvps();
+      } else if (conflict.type === 'driver_vs_driver') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          isDuplicate: true,
+          adminVerified: true,
+          total_headcount: 0,
+        });
+
+        showToast(`DEDUPLICATED: Duplicate driver "${conflict.canonicalName}" excluded from count.`);
+        await fetchRsvps();
+      }
+    } catch (err) {
+      console.error('Error resolving duplicate conflict:', err);
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
+  // Conflict Resolution: Confirm Separate Persons (Count Both)
+  const handleConfirmSeparateConflict = async (conflict: DetectedConflict) => {
+    setIsResolvingConflict(true);
+    try {
+      if (conflict.type === 'driver_vs_companion' || conflict.type === 'companion_vs_companion') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        const updatedCompanions = (targetRecord.companions || []).map((comp) => {
+          if (comp.id === conflict.conflicting.companionId) {
+            return {
+              ...comp,
+              isDuplicate: false,
+              adminVerified: true,
+              duplicateOf: undefined,
+            };
+          }
+          return comp;
+        });
+
+        const netHeadcount = calculateRecordHeadcount({
+          ...targetRecord,
+          companions: updatedCompanions,
+        });
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          companions: updatedCompanions,
+          total_headcount: netHeadcount,
+        });
+
+        showToast(`VERIFIED: "${conflict.canonicalName}" confirmed as separate person. Both counted.`);
+        await fetchRsvps();
+      } else if (conflict.type === 'driver_vs_driver') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        const netHeadcount = calculateRecordHeadcount({
+          ...targetRecord,
+          isDuplicate: false,
+        });
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          isDuplicate: false,
+          adminVerified: true,
+          total_headcount: netHeadcount,
+        });
+
+        showToast(`VERIFIED: "${conflict.canonicalName}" confirmed as separate registration.`);
+        await fetchRsvps();
+      }
+    } catch (err) {
+      console.error('Error confirming separate conflict:', err);
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
+  // Conflict Resolution: Reset back to Pending
+  const handleResetConflict = async (conflict: DetectedConflict) => {
+    setIsResolvingConflict(true);
+    try {
+      if (conflict.type === 'driver_vs_companion' || conflict.type === 'companion_vs_companion') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        const updatedCompanions = (targetRecord.companions || []).map((comp) => {
+          if (comp.id === conflict.conflicting.companionId) {
+            return {
+              ...comp,
+              isDuplicate: false,
+              adminVerified: false,
+              duplicateOf: undefined,
+            };
+          }
+          return comp;
+        });
+
+        const netHeadcount = calculateRecordHeadcount({
+          ...targetRecord,
+          companions: updatedCompanions,
+        });
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          companions: updatedCompanions,
+          total_headcount: netHeadcount,
+        });
+
+        showToast(`RESET: "${conflict.canonicalName}" duplicate status reset to pending.`);
+        await fetchRsvps();
+      } else if (conflict.type === 'driver_vs_driver') {
+        const targetRecord = rsvps.find((r) => r.id === conflict.conflicting.recordId);
+        if (!targetRecord) return;
+
+        await rsvpService.updateRsvp(targetRecord.id, {
+          isDuplicate: false,
+          adminVerified: false,
+          total_headcount: calculateRecordHeadcount(targetRecord),
+        });
+
+        showToast(`RESET: "${conflict.canonicalName}" driver duplicate reset to pending.`);
+        await fetchRsvps();
+      }
+    } catch (err) {
+      console.error('Error resetting conflict:', err);
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
   // Stats calculation
   const stats = useMemo(() => {
-    const attendingRecords = rsvps.filter((r) => r.attending);
+    const attendingRecords = rsvps.filter((r) => r.attending && !r.isDuplicate);
     const dnfRecords = rsvps.filter((r) => !r.attending);
 
     let totalHeadcount = 0;
     let kidsCount = 0;
     let adultsCount = 0;
+    let deduplicatedCount = 0;
 
     attendingRecords.forEach((r) => {
       adultsCount += 1;
@@ -246,6 +449,10 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
 
       if (Array.isArray(r.companions)) {
         r.companions.forEach((c) => {
+          if (c.isDuplicate) {
+            deduplicatedCount += 1;
+            return; // Excluded from headcount!
+          }
           totalHeadcount += 1;
           if (c.type === 'Kid') {
             kidsCount += 1;
@@ -259,23 +466,41 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     const relBreakdown: Record<string, number> = {};
     attendingRecords.forEach((r) => {
       const rel = r.relationship || 'Guest';
-      relBreakdown[rel] = (relBreakdown[rel] || 0) + (r.total_headcount || 1);
+      const eff = calculateRecordHeadcount(r);
+      relBreakdown[rel] = (relBreakdown[rel] || 0) + eff;
     });
 
     return {
       totalHeadcount,
       kidsCount,
       adultsCount,
+      deduplicatedCount,
       confirmedDrivers: attendingRecords.length,
       dnfDrivers: dnfRecords.length,
       relBreakdown,
     };
   }, [rsvps]);
 
+  // Set of record IDs involved in duplicate conflicts or having deduplicated companions
+  const conflictRecordIds = useMemo(() => {
+    const ids = new Set<string>();
+    conflicts.forEach((c) => {
+      ids.add(c.primary.recordId);
+      ids.add(c.conflicting.recordId);
+    });
+    rsvps.forEach((r) => {
+      if (r.isDuplicate || (Array.isArray(r.companions) && r.companions.some((comp) => comp.isDuplicate))) {
+        ids.add(r.id);
+      }
+    });
+    return ids;
+  }, [conflicts, rsvps]);
+
   const filteredRsvps = useMemo(() => {
     return rsvps.filter((r) => {
       if (filterTab === 'attending' && !r.attending) return false;
       if (filterTab === 'dnf' && r.attending) return false;
+      if (filterTab === 'conflicts' && !conflictRecordIds.has(r.id)) return false;
 
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -287,37 +512,49 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
 
       return matchDriver || matchRel || matchMsg || matchCompanions;
     });
-  }, [rsvps, filterTab, searchQuery]);
+  }, [rsvps, filterTab, searchQuery, conflictRecordIds]);
 
   const handleExportCSV = () => {
     const headers = [
       'Driver Name',
       'Status',
       'Relationship',
-      'Total Headcount',
+      'Net Headcount (Deduplicated)',
       'Adults',
       'Kids',
       'Companions (Itemized)',
+      'Deduplicated Accompanies Count',
       'Pit Radio Message',
       'Date Submitted',
     ];
 
     const rows = rsvps.map((r) => {
       const companionsStr = Array.isArray(r.companions)
-        ? r.companions.map((c) => `${c.fullName} (${c.type})`).join('; ')
+        ? r.companions
+            .map((c) => `${c.fullName} (${c.type}${c.isDuplicate ? ' [DEDUPLICATED/EXCLUDED]' : ''})`)
+            .join('; ')
         : '';
 
-      const rKids = Array.isArray(r.companions) ? r.companions.filter((c) => c.type === 'Kid').length : 0;
-      const rAdults = r.attending ? 1 + (Array.isArray(r.companions) ? r.companions.filter((c) => c.type === 'Adult').length : 0) : 0;
+      const rKids = Array.isArray(r.companions)
+        ? r.companions.filter((c) => c.type === 'Kid' && !c.isDuplicate).length
+        : 0;
+      const rAdults = r.attending && !r.isDuplicate
+        ? 1 + (Array.isArray(r.companions) ? r.companions.filter((c) => c.type === 'Adult' && !c.isDuplicate).length : 0)
+        : 0;
+      const rDeduplicated = Array.isArray(r.companions)
+        ? r.companions.filter((c) => c.isDuplicate).length
+        : 0;
+      const netHeadcount = calculateRecordHeadcount(r);
 
       return [
         `"${r.guest_name.replace(/"/g, '""')}"`,
-        r.attending ? 'CONFIRMED' : 'DNF',
+        r.attending ? (r.isDuplicate ? 'DUPLICATE ENTRY' : 'CONFIRMED') : 'DNF',
         `"${r.relationship || 'Guest'}"`,
-        r.attending ? r.total_headcount : 0,
+        netHeadcount,
         rAdults,
         rKids,
         `"${companionsStr.replace(/"/g, '""')}"`,
+        rDeduplicated,
         `"${(r.message || '').replace(/"/g, '""')}"`,
         `"${new Date(r.created_at).toLocaleString()}"`,
       ].join(',');
@@ -450,6 +687,25 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+              {/* Duplicate Audit Station Button */}
+              <button
+                onClick={() => setShowConflictModal(true)}
+                className={`px-3.5 py-2 rounded-lg text-xs font-telemetry font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  unresolvedConflicts.length > 0
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.35)] animate-pulse'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+                }`}
+                title="Verify duplicates across drivers and accompanies"
+              >
+                <ShieldAlert size={14} className={unresolvedConflicts.length > 0 ? 'text-amber-400' : 'text-[#00D2BE]'} />
+                <span>DUPLICATE AUDIT</span>
+                {unresolvedConflicts.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-amber-500 text-black text-[10px] font-black rounded-full">
+                    {unresolvedConflicts.length}
+                  </span>
+                )}
+              </button>
+
               {/* Add VIP Driver */}
               <button
                 onClick={() => setShowAddModal(true)}
@@ -491,6 +747,67 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
           </div>
         </div>
 
+        {/* FLOATING PIT RADIO TRANSMISSION TOAST */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.95 }}
+              className="p-3 bg-[#12121A] border border-[#00D2BE]/60 text-white rounded-xl shadow-[0_0_20px_rgba(0,210,190,0.3)] flex items-center gap-3 text-xs font-telemetry"
+            >
+              <div className="w-2 h-2 rounded-full bg-[#00D2BE] animate-ping" />
+              <Radio size={14} className="text-[#00D2BE] shrink-0" />
+              <span className="font-bold flex-1">{toastMessage}</span>
+              <button
+                onClick={() => setToastMessage(null)}
+                className="text-[#8E8E98] hover:text-white p-1"
+              >
+                <X size={12} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* FIA STEWARDS DUPLICATE TELEMETRY BANNER */}
+        {unresolvedConflicts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/50 via-[#181309] to-amber-950/30 border border-amber-500/60 shadow-[0_0_25px_rgba(245,158,11,0.2)] relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 shrink-0 mt-0.5 md:mt-0 shadow-inner">
+                  <AlertTriangle size={22} className="animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-telemetry font-black tracking-widest uppercase">
+                      FIA STEWARDS INQUIRY
+                    </span>
+                    <h3 className="font-f1-head text-white text-sm sm:text-base font-black uppercase italic tracking-wide">
+                      {unresolvedConflicts.length} Potential Guest Duplicate{unresolvedConflicts.length > 1 ? 's' : ''} Detected
+                    </h3>
+                  </div>
+                  <p className="font-telemetry text-xs text-[#D5D5DF] mt-1 max-w-2xl">
+                    Accompanying guests have names matching registered drivers. Review and deduplicate to ensure event catering and seat counts aren't double-charged.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowConflictModal(true)}
+                className="w-full md:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-telemetry font-black text-xs rounded-full shadow-[0_0_18px_rgba(245,158,11,0.5)] flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap active:scale-98"
+              >
+                <ShieldAlert size={15} />
+                <span>VERIFY & DEDUPLICATE ({unresolvedConflicts.length})</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* 4 KPI TELEMETRY CARDS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Headcount */}
@@ -501,10 +818,15 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="font-f1-head text-3xl sm:text-4xl font-black text-white">{stats.totalHeadcount}</span>
-              <span className="text-xs font-telemetry text-[#8E8E98]">guests</span>
+              <span className="text-xs font-telemetry text-[#8E8E98]">unique guests</span>
             </div>
-            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1">
-              {stats.adultsCount} Adults • {stats.kidsCount} Kids
+            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1 flex items-center gap-1.5 flex-wrap">
+              <span>{stats.adultsCount} Adults • {stats.kidsCount} Kids</span>
+              {stats.deduplicatedCount > 0 && (
+                <span className="text-[#00D2BE] font-bold bg-[#00D2BE]/10 px-1.5 py-0.5 rounded border border-[#00D2BE]/30 flex items-center gap-1">
+                  <ShieldCheck size={11} /> {stats.deduplicatedCount} deduplicated
+                </span>
+              )}
             </div>
           </div>
 
@@ -596,6 +918,19 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                 >
                   DNF ({stats.dnfDrivers})
                 </button>
+                <button
+                  onClick={() => setFilterTab('conflicts')}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    filterTab === 'conflicts'
+                      ? 'bg-amber-500 text-black shadow-md'
+                      : conflictRecordIds.size > 0
+                      ? 'text-amber-400 hover:text-amber-300'
+                      : 'text-[#8E8E98] hover:text-white'
+                  }`}
+                >
+                  <AlertTriangle size={12} className={unresolvedConflicts.length > 0 ? 'animate-bounce' : ''} />
+                  <span>DUPLICATES ({conflictRecordIds.size})</span>
+                </button>
               </div>
 
               {/* Search & Actions */}
@@ -642,55 +977,130 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                       <td colSpan={8} className="py-12 text-center text-[#8E8E98]">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <Users size={28} className="text-[#555566]" />
-                          <p className="font-f1-head font-bold uppercase text-white">NO DRIVERS REGISTERED YET</p>
-                          <p className="text-xs">Awaiting formation lap submissions or click "+ ADD DRIVER" above.</p>
+                          <p className="font-f1-head font-bold uppercase text-white">NO DRIVERS IN THIS VIEW</p>
+                          <p className="text-xs">No registrations match current filter or search criteria.</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredRsvps.map((record, idx) => (
-                      <tr key={record.id} className="hover:bg-white/[0.03] transition-colors">
-                        <td className="py-3 px-4 text-[#8E8E98] font-bold">
-                          P{idx + 1}
-                        </td>
+                    filteredRsvps.map((record, idx) => {
+                      const netSeats = calculateRecordHeadcount(record);
+                      const deduplicatedInRecord = Array.isArray(record.companions)
+                        ? record.companions.filter((c) => c.isDuplicate).length
+                        : 0;
 
-                        <td className="py-3 px-4 font-bold text-white whitespace-nowrap">
-                          {record.guest_name}
-                        </td>
+                      return (
+                        <tr key={record.id} className="hover:bg-white/[0.03] transition-colors">
+                          <td className="py-3 px-4 text-[#8E8E98] font-bold">
+                            P{idx + 1}
+                          </td>
 
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          {record.attending ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#00D2BE]/15 text-[#00D2BE] border border-[#00D2BE]/30 text-[10px] font-bold">
-                              <CheckCircle2 size={12} /> CONFIRMED
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FF5E5B]/15 text-[#FF5E5B] border border-[#FF5E5B]/30 text-[10px] font-bold">
-                              <XCircle size={12} /> DNF
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="py-3 px-4 font-bold text-white whitespace-nowrap">
-                          {record.attending ? record.total_headcount : 0}
-                        </td>
-
-                        <td className="py-3 px-4 max-w-xs">
-                          {record.attending && Array.isArray(record.companions) && record.companions.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {record.companions.map((c) => (
-                                <span
-                                  key={c.id}
-                                  className="px-2 py-0.5 rounded-full text-[10px] border bg-[#00D2BE]/10 text-[#00D2BE] border-[#00D2BE]/30 flex items-center gap-1"
-                                >
-                                  <UserCheck size={11} />
-                                  <span>{c.fullName}</span>
+                          <td className="py-3 px-4 font-bold text-white whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span>{record.guest_name}</span>
+                              {record.isDuplicate && (
+                                <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[9px] font-bold">
+                                  DUPLICATE DRIVER
                                 </span>
-                              ))}
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-[#555566] text-[10px]">Solo Driver</span>
-                          )}
-                        </td>
+                          </td>
+
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {record.attending ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#00D2BE]/15 text-[#00D2BE] border border-[#00D2BE]/30 text-[10px] font-bold">
+                                <CheckCircle2 size={12} /> CONFIRMED
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FF5E5B]/15 text-[#FF5E5B] border border-[#FF5E5B]/30 text-[10px] font-bold">
+                                <XCircle size={12} /> DNF
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-white text-sm">{netSeats}</span>
+                              {deduplicatedInRecord > 0 && (
+                                <span
+                                  className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1 rounded cursor-pointer"
+                                  onClick={() => setShowConflictModal(true)}
+                                  title={`${deduplicatedInRecord} companion(s) deduplicated from count`}
+                                >
+                                  (-{deduplicatedInRecord} dupl)
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4 max-w-xs">
+                            {record.attending && Array.isArray(record.companions) && record.companions.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {record.companions.map((c) => {
+                                  if (c.isDuplicate) {
+                                    return (
+                                      <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => setShowConflictModal(true)}
+                                        className="px-2 py-0.5 rounded-full text-[10px] border bg-amber-500/15 text-amber-300/80 border-amber-500/30 line-through flex items-center gap-1 cursor-pointer hover:bg-amber-500/25 transition-colors"
+                                        title="Deduplicated: excluded from headcount to prevent double counting. Tap to inspect."
+                                      >
+                                        <ShieldAlert size={10} className="shrink-0 text-amber-400 no-underline" />
+                                        <span>{c.fullName}</span>
+                                        <span className="text-[9px] no-underline font-black text-amber-400">[EXCLUDED]</span>
+                                      </button>
+                                    );
+                                  }
+
+                                  const hasUnresolvedMatch = unresolvedConflicts.some(
+                                    (cf) => cf.conflicting.companionId === c.id
+                                  );
+
+                                  if (hasUnresolvedMatch) {
+                                    return (
+                                      <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => setShowConflictModal(true)}
+                                        className="px-2 py-0.5 rounded-full text-[10px] border bg-amber-500/25 text-amber-300 border-amber-500/70 animate-pulse flex items-center gap-1 cursor-pointer hover:bg-amber-500/40 transition-colors shadow-sm"
+                                        title="Name matches a registered driver! Click to open verification."
+                                      >
+                                        <AlertTriangle size={10} className="shrink-0 text-amber-400" />
+                                        <span>{c.fullName}</span>
+                                        <span className="text-[9px] bg-amber-500 text-black px-1 rounded font-black">DUPLICATE?</span>
+                                      </button>
+                                    );
+                                  }
+
+                                  if (c.adminVerified) {
+                                    return (
+                                      <span
+                                        key={c.id}
+                                        className="px-2 py-0.5 rounded-full text-[10px] border bg-emerald-500/15 text-emerald-300 border-emerald-500/40 flex items-center gap-1"
+                                        title="Admin verified: confirmed separate person"
+                                      >
+                                        <ShieldCheck size={11} className="shrink-0 text-emerald-400" />
+                                        <span>{c.fullName}</span>
+                                      </span>
+                                    );
+                                  }
+
+                                  return (
+                                    <span
+                                      key={c.id}
+                                      className="px-2 py-0.5 rounded-full text-[10px] border bg-[#00D2BE]/10 text-[#00D2BE] border-[#00D2BE]/30 flex items-center gap-1"
+                                    >
+                                      <UserCheck size={11} />
+                                      <span>{c.fullName}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-[#555566] text-[10px]">Solo Driver</span>
+                            )}
+                          </td>
 
                         <td className="py-3 px-4 max-w-xs text-[#C5C5CE] italic text-[11px] truncate">
                           {record.message ? (
@@ -734,7 +1144,8 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           </div>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -879,7 +1290,300 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
       </AnimatePresence>
 
       {/* ==============================================================================
-          MODAL 2: EDIT DRIVER RECORD
+          MODAL: FIA STEWARDS DUPLICATE VERIFICATION & DEDUPLICATION COMMAND
+          ============================================================================== */}
+      <AnimatePresence>
+        {showConflictModal && (
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowConflictModal(false);
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/90 backdrop-blur-md overflow-y-auto"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="w-full max-w-3xl double-bezel shadow-2xl relative my-auto"
+            >
+              <div className="double-bezel-inner p-5 sm:p-7 max-h-[92vh] overflow-y-auto custom-scrollbar">
+                <div className="absolute top-0 left-0 right-0 h-1.5 kerb-inlay-h" />
+
+                <button
+                  onClick={() => setShowConflictModal(false)}
+                  className="absolute top-4 right-4 p-2 rounded-full text-[#8E8E98] hover:text-white bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                  title="Close (Esc)"
+                >
+                  <X size={16} />
+                </button>
+
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-2 pt-1 pr-8">
+                  <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 shrink-0">
+                    <ShieldAlert size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-telemetry font-black tracking-widest uppercase">
+                        RACE CONTROL // FIA STEWARDS
+                      </span>
+                      <span className="text-[11px] font-telemetry text-[#8E8E98]">
+                        HEADCOUNT INTEGRITY & DEDUPLICATION
+                      </span>
+                    </div>
+                    <h2 className="font-f1-head text-lg sm:text-2xl font-black text-white uppercase italic">
+                      GUEST DUPLICATE AUDIT & DEDUPLICATION
+                    </h2>
+                  </div>
+                </div>
+
+                <p className="font-telemetry text-xs text-[#8E8E98] mb-4">
+                  Whenever an accompanying guest (+1) has also submitted their own primary driver RSVP, deduplicating them marks their +1 entry as duplicate and deducts them from the host's headcount. This guarantees catering & venue seat counts remain exact without double-counting.
+                </p>
+
+                {/* Telemetry Status Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5 font-telemetry text-xs">
+                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
+                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">TOTAL DETECTED</span>
+                    <span className="text-white font-f1-head font-bold text-lg">{conflicts.length}</span>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border ${unresolvedConflicts.length > 0 ? 'bg-amber-950/40 border-amber-500/60 text-amber-300' : 'bg-[#101018] border-white/10 text-white'}`}>
+                    <span className="text-[10px] uppercase block font-bold">PENDING VERIFICATION</span>
+                    <span className="font-f1-head font-bold text-lg">{unresolvedConflicts.length}</span>
+                  </div>
+                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
+                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">DEDUPLICATED (SAVED)</span>
+                    <span className="text-[#00D2BE] font-f1-head font-bold text-lg">{deduplicatedConflicts.length}</span>
+                  </div>
+                  <div className="bg-[#101018] border border-white/10 p-2.5 rounded-xl">
+                    <span className="text-[#8E8E98] text-[10px] uppercase block font-bold">CONFIRMED SEPARATE</span>
+                    <span className="text-emerald-400 font-f1-head font-bold text-lg">{resolvedConflicts.length - deduplicatedConflicts.length}</span>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#101018] rounded-full border border-white/10 mb-4 w-full sm:w-auto overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setConflictFilter('all')}
+                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer ${
+                      conflictFilter === 'all'
+                        ? 'bg-[#E10600] text-white shadow-md'
+                        : 'text-[#8E8E98] hover:text-white'
+                    }`}
+                  >
+                    ALL CONFLICTS ({conflicts.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConflictFilter('pending')}
+                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      conflictFilter === 'pending'
+                        ? 'bg-amber-500 text-black shadow-md'
+                        : 'text-[#8E8E98] hover:text-white'
+                    }`}
+                  >
+                    <AlertTriangle size={12} />
+                    <span>PENDING ({unresolvedConflicts.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConflictFilter('resolved')}
+                    className={`px-3.5 py-1 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer ${
+                      conflictFilter === 'resolved'
+                        ? 'bg-[#00D2BE] text-black shadow-md'
+                        : 'text-[#8E8E98] hover:text-white'
+                    }`}
+                  >
+                    RESOLVED ({resolvedConflicts.length})
+                  </button>
+                </div>
+
+                {/* List of Conflicts */}
+                <div className="space-y-3">
+                  {conflicts
+                    .filter((c) => {
+                      if (conflictFilter === 'pending') return !c.adminVerified;
+                      if (conflictFilter === 'resolved') return c.adminVerified;
+                      return true;
+                    })
+                    .map((conflict) => {
+                      return (
+                        <div
+                          key={conflict.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            !conflict.adminVerified
+                              ? 'bg-[#181308] border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                              : conflict.isDeduplicated
+                              ? 'bg-[#111617] border-[#00D2BE]/30'
+                              : 'bg-[#101511] border-emerald-500/30'
+                          }`}
+                        >
+                          {/* Card Top: Colliding Name & Badges */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-white/[0.08] pb-2.5">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-f1-head text-base sm:text-lg font-black text-white uppercase italic tracking-wider">
+                                  {conflict.canonicalName}
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-telemetry font-bold uppercase bg-white/10 text-[#C5C5CE]">
+                                  {conflict.type === 'driver_vs_companion'
+                                    ? 'Driver ↔ Accompany Collision'
+                                    : conflict.type === 'companion_vs_companion'
+                                    ? 'Accompany ↔ Accompany Collision'
+                                    : 'Duplicate Driver Registration'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div>
+                              {!conflict.adminVerified ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 text-[10px] font-telemetry font-bold animate-pulse">
+                                  <AlertTriangle size={11} /> NEEDS VERIFICATION
+                                </span>
+                              ) : conflict.isDeduplicated ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#00D2BE]/15 text-[#00D2BE] border border-[#00D2BE]/40 text-[10px] font-telemetry font-bold">
+                                  <ShieldCheck size={11} /> DEDUPLICATED (EXCLUDED FROM +1 COUNT)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-telemetry font-bold">
+                                  <Users size={11} /> CONFIRMED SEPARATE GUESTS (COUNTED)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Comparison Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 font-telemetry text-xs">
+                            {/* Source A */}
+                            <div className="p-3 bg-black/40 rounded-lg border border-white/10">
+                              <div className="flex items-center justify-between text-[10px] text-[#8E8E98] uppercase font-bold mb-1">
+                                <span>SOURCE A // REGISTERED PRIMARY DRIVER</span>
+                                <span className="text-[#00D2BE]">COUNTS AS 1 SEAT</span>
+                              </div>
+                              <div className="text-sm font-bold text-white mb-0.5">
+                                {conflict.primary.driverName}
+                              </div>
+                              <div className="text-[11px] text-[#8E8E98]">
+                                Relationship: <span className="text-[#C5C5CE]">{conflict.primary.relationship}</span>
+                              </div>
+                              <div className="text-[10px] text-[#6E6E78] mt-1">
+                                RSVP Date: {new Date(conflict.primary.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </div>
+                            </div>
+
+                            {/* Source B */}
+                            <div className="p-3 bg-black/40 rounded-lg border border-white/10">
+                              <div className="flex items-center justify-between text-[10px] text-[#8E8E98] uppercase font-bold mb-1">
+                                <span>SOURCE B // LISTED AS ACCOMPANY (+1)</span>
+                                <span className={conflict.isDeduplicated ? 'text-amber-400 font-bold' : 'text-[#FFB800]'}>
+                                  {conflict.isDeduplicated ? 'EXCLUDED (0 SEATS)' : 'CURRENTLY +1 SEAT'}
+                                </span>
+                              </div>
+                              <div className="text-sm font-bold text-white mb-0.5">
+                                {conflict.canonicalName}
+                              </div>
+                              <div className="text-[11px] text-[#8E8E98]">
+                                Added on ticket of: <span className="text-[#00D2BE] font-bold">{conflict.conflicting.driverName}</span> ({conflict.conflicting.companionType || 'Adult'})
+                              </div>
+                              <div className="text-[10px] text-[#6E6E78] mt-1">
+                                RSVP Date: {new Date(conflict.conflicting.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2.5 border-t border-white/[0.06]">
+                            <div className="text-[11px] font-telemetry text-[#8E8E98]">
+                              {!conflict.adminVerified
+                                ? 'Is this the same person? Choose an action to update event headcount:'
+                                : conflict.isDeduplicated
+                                ? `Deduplicated on ${conflict.conflicting.driverName}'s ticket. Not counted twice.`
+                                : `Both ${conflict.primary.driverName} and ${conflict.conflicting.driverName}'s accompany are counted.`}
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                              {!conflict.adminVerified ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={isResolvingConflict}
+                                    onClick={() => handleDeduplicateConflict(conflict)}
+                                    className="px-3.5 py-1.5 bg-[#00D2BE] hover:bg-[#1fe2ce] text-black font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(0,210,190,0.3)] disabled:opacity-50"
+                                  >
+                                    <ShieldCheck size={13} />
+                                    <span>DEDUPLICATE (EXCLUDE FROM +1)</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={isResolvingConflict}
+                                    onClick={() => handleConfirmSeparateConflict(conflict)}
+                                    className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-telemetry font-bold text-xs rounded-full cursor-pointer flex items-center gap-1.5 transition-all border border-white/20 disabled:opacity-50"
+                                  >
+                                    <Users size={13} />
+                                    <span>COUNT BOTH (DIFFERENT PERSONS)</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={isResolvingConflict}
+                                    onClick={() =>
+                                      conflict.isDeduplicated
+                                        ? handleConfirmSeparateConflict(conflict)
+                                        : handleDeduplicateConflict(conflict)
+                                    }
+                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs font-telemetry rounded-full cursor-pointer transition-colors border border-white/15"
+                                  >
+                                    Switch to {conflict.isDeduplicated ? 'Count Both' : 'Deduplicate'}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={isResolvingConflict}
+                                    onClick={() => handleResetConflict(conflict)}
+                                    className="px-3 py-1 text-[#8E8E98] hover:text-white text-xs font-telemetry rounded-full cursor-pointer transition-colors"
+                                  >
+                                    Reset
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {conflicts.filter((c) => {
+                    if (conflictFilter === 'pending') return !c.adminVerified;
+                    if (conflictFilter === 'resolved') return c.adminVerified;
+                    return true;
+                  }).length === 0 && (
+                    <div className="py-12 text-center text-[#8E8E98] bg-[#101018] rounded-xl border border-white/[0.06] p-6">
+                      <ShieldCheck size={36} className="text-[#00D2BE] mx-auto mb-2 opacity-80" />
+                      <h4 className="font-f1-head font-bold uppercase text-white text-base">
+                        {conflictFilter === 'pending'
+                          ? 'ZERO PENDING CONFLICTS'
+                          : 'NO RECORDS FOUND'}
+                      </h4>
+                      <p className="font-telemetry text-xs text-[#8E8E98] max-w-md mx-auto mt-1">
+                        {conflictFilter === 'pending'
+                          ? 'All detected names have been verified and accounted for. Guest headcount is accurate.'
+                          : 'No duplicate detections in this view.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ==============================================================================
+          MODAL 3: EDIT DRIVER RECORD
           ============================================================================== */}
       <AnimatePresence>
         {editingRecord && (
@@ -984,27 +1688,57 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                         </button>
                       </div>
 
-                      <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {editCompanions.map((comp, idx) => (
-                          <div key={comp.id || idx} className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={comp.fullName}
-                              onChange={(e) => {
-                                const next = [...editCompanions];
-                                next[idx].fullName = e.target.value;
-                                setEditCompanions(next);
-                              }}
-                              placeholder={`Companion #${idx + 1}`}
-                              className="flex-1 px-3 py-1.5 bg-[#12121A] border border-white/10 rounded text-xs text-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setEditCompanions(editCompanions.filter((_, i) => i !== idx))}
-                              className="p-1.5 text-[#8E8E98] hover:text-red-400 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                          <div key={comp.id || idx} className="p-2.5 bg-[#12121A] border border-white/10 rounded-lg space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={comp.fullName}
+                                onChange={(e) => {
+                                  const next = [...editCompanions];
+                                  next[idx].fullName = e.target.value;
+                                  setEditCompanions(next);
+                                }}
+                                placeholder={`Companion #${idx + 1}`}
+                                className="flex-1 px-3 py-1.5 bg-[#0F0F16] border border-white/10 rounded text-xs text-white"
+                              />
+                              <select
+                                value={comp.type || 'Adult'}
+                                onChange={(e) => {
+                                  const next = [...editCompanions];
+                                  next[idx].type = e.target.value as 'Adult' | 'Kid';
+                                  setEditCompanions(next);
+                                }}
+                                className="px-2 py-1.5 bg-[#0F0F16] border border-white/10 rounded text-xs text-white"
+                              >
+                                <option value="Adult">Adult</option>
+                                <option value="Kid">Kid</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => setEditCompanions(editCompanions.filter((_, i) => i !== idx))}
+                                className="p-1.5 text-[#8E8E98] hover:text-red-400 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                            <label className="flex items-center gap-2 text-[11px] text-[#8E8E98] cursor-pointer hover:text-white select-none">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(comp.isDuplicate)}
+                                onChange={(e) => {
+                                  const next = [...editCompanions];
+                                  next[idx].isDuplicate = e.target.checked;
+                                  next[idx].adminVerified = true;
+                                  setEditCompanions(next);
+                                }}
+                                className="accent-[#00D2BE] rounded cursor-pointer"
+                              />
+                              <span className={comp.isDuplicate ? 'text-amber-400 font-bold' : ''}>
+                                Exclude as duplicate (already has an RSVP)
+                              </span>
+                            </label>
                           </div>
                         ))}
                       </div>
@@ -1145,27 +1879,57 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                         </button>
                       </div>
 
-                      <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {newCompanions.map((comp, idx) => (
-                          <div key={comp.id || idx} className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={comp.fullName}
-                              onChange={(e) => {
-                                const next = [...newCompanions];
-                                next[idx].fullName = e.target.value;
-                                setNewCompanions(next);
-                              }}
-                              placeholder={`Companion #${idx + 1} Name`}
-                              className="flex-1 px-3 py-1.5 bg-[#12121A] border border-white/10 rounded text-xs text-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setNewCompanions(newCompanions.filter((_, i) => i !== idx))}
-                              className="p-1.5 text-[#8E8E98] hover:text-red-400 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                          <div key={comp.id || idx} className="p-2.5 bg-[#12121A] border border-white/10 rounded-lg space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={comp.fullName}
+                                onChange={(e) => {
+                                  const next = [...newCompanions];
+                                  next[idx].fullName = e.target.value;
+                                  setNewCompanions(next);
+                                }}
+                                placeholder={`Companion #${idx + 1} Name`}
+                                className="flex-1 px-3 py-1.5 bg-[#0F0F16] border border-white/10 rounded text-xs text-white"
+                              />
+                              <select
+                                value={comp.type || 'Adult'}
+                                onChange={(e) => {
+                                  const next = [...newCompanions];
+                                  next[idx].type = e.target.value as 'Adult' | 'Kid';
+                                  setNewCompanions(next);
+                                }}
+                                className="px-2 py-1.5 bg-[#0F0F16] border border-white/10 rounded text-xs text-white"
+                              >
+                                <option value="Adult">Adult</option>
+                                <option value="Kid">Kid</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => setNewCompanions(newCompanions.filter((_, i) => i !== idx))}
+                                className="p-1.5 text-[#8E8E98] hover:text-red-400 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                            <label className="flex items-center gap-2 text-[11px] text-[#8E8E98] cursor-pointer hover:text-white select-none">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(comp.isDuplicate)}
+                                onChange={(e) => {
+                                  const next = [...newCompanions];
+                                  next[idx].isDuplicate = e.target.checked;
+                                  next[idx].adminVerified = true;
+                                  setNewCompanions(next);
+                                }}
+                                className="accent-[#00D2BE] rounded cursor-pointer"
+                              />
+                              <span className={comp.isDuplicate ? 'text-amber-400 font-bold' : ''}>
+                                Exclude as duplicate (already registered on another pass)
+                              </span>
+                            </label>
                           </div>
                         ))}
                       </div>

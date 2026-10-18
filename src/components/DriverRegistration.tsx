@@ -104,13 +104,21 @@ export const DriverRegistration: React.FC<DriverRegistrationProps> = ({
     try {
       const formattedCompanions: Companion[] = companions
         .filter((c) => c.name.trim().length > 0)
-        .map((c) => ({
-          id: c.id,
-          fullName: c.name.trim(),
-          type: 'Adult',
-        }));
+        .map((c) => {
+          const existingComp = existingRsvp?.companions?.find(
+            (ec) => ec.id === c.id || ec.fullName.trim().toLowerCase() === c.name.trim().toLowerCase()
+          );
+          return {
+            id: c.id,
+            fullName: c.name.trim(),
+            type: existingComp?.type || 'Adult',
+            isDuplicate: existingComp?.isDuplicate || false,
+            adminVerified: existingComp?.adminVerified || false,
+            duplicateOf: existingComp?.duplicateOf,
+          };
+        });
 
-      const totalHeadcount = 1 + formattedCompanions.length;
+      const totalHeadcount = 1 + formattedCompanions.filter((c) => !c.isDuplicate).length;
 
       let resultRecord: RsvpRecord | null = null;
 
