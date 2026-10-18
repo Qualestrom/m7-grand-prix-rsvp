@@ -433,8 +433,9 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     }
   };
 
-  // Stats calculation
+  // Stats calculation - crystal-clear transparent counting of guests, entries, and declined
   const stats = useMemo(() => {
+    const totalEntries = rsvps.length;
     const attendingRecords = rsvps.filter((r) => r.attending && !r.isDuplicate);
     const dnfRecords = rsvps.filter((r) => !r.attending);
 
@@ -442,12 +443,17 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     let kidsCount = 0;
     let adultsCount = 0;
     let deduplicatedCount = 0;
+    let totalCompanionsListed = 0;
+    let driversWithCompanionsCount = 0;
 
     attendingRecords.forEach((r) => {
       adultsCount += 1;
       totalHeadcount += 1;
 
-      if (Array.isArray(r.companions)) {
+      if (Array.isArray(r.companions) && r.companions.length > 0) {
+        driversWithCompanionsCount += 1;
+        totalCompanionsListed += r.companions.length;
+
         r.companions.forEach((c) => {
           if (c.isDuplicate) {
             deduplicatedCount += 1;
@@ -463,6 +469,11 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
       }
     });
 
+    const confirmedDrivers = attendingRecords.length;
+    const dnfDrivers = dnfRecords.length;
+    const attendingCompanions = Math.max(0, totalHeadcount - confirmedDrivers);
+    const attendanceRate = totalEntries > 0 ? Math.round((confirmedDrivers / totalEntries) * 100) : 100;
+
     const relBreakdown: Record<string, number> = {};
     attendingRecords.forEach((r) => {
       const rel = r.relationship || 'Guest';
@@ -471,12 +482,17 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
     });
 
     return {
+      totalEntries,
       totalHeadcount,
       kidsCount,
       adultsCount,
       deduplicatedCount,
-      confirmedDrivers: attendingRecords.length,
-      dnfDrivers: dnfRecords.length,
+      confirmedDrivers,
+      dnfDrivers,
+      attendingCompanions,
+      totalCompanionsListed,
+      driversWithCompanionsCount,
+      attendanceRate,
       relBreakdown,
     };
   }, [rsvps]);
@@ -513,6 +529,12 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
       return matchDriver || matchRel || matchMsg || matchCompanions;
     });
   }, [rsvps, filterTab, searchQuery, conflictRecordIds]);
+
+  const filteredHeadcount = useMemo(() => {
+    return filteredRsvps
+      .filter((r) => r.attending && !r.isDuplicate)
+      .reduce((acc, r) => acc + calculateRecordHeadcount(r), 0);
+  }, [filteredRsvps]);
 
   const handleExportCSV = () => {
     const headers = [
@@ -808,76 +830,186 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
           </motion.div>
         )}
 
-        {/* 4 KPI TELEMETRY CARDS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Headcount */}
-          <div className="bg-[#151520]/80 border border-white/[0.08] p-4 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold">
-              <span className="flex items-center gap-1.5"><Users size={14} className="text-[#00D2BE]" /> TOTAL HEADCOUNT</span>
-              <span className="text-[10px] bg-[#00D2BE]/10 text-[#00D2BE] px-2 py-0.5 rounded-full border border-[#00D2BE]/30">ATTENDING</span>
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-f1-head text-3xl sm:text-4xl font-black text-white">{stats.totalHeadcount}</span>
-              <span className="text-xs font-telemetry text-[#8E8E98]">unique guests</span>
-            </div>
-            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1 flex items-center gap-1.5 flex-wrap">
-              <span>{stats.adultsCount} Adults • {stats.kidsCount} Kids</span>
-              {stats.deduplicatedCount > 0 && (
-                <span className="text-[#00D2BE] font-bold bg-[#00D2BE]/10 px-1.5 py-0.5 rounded border border-[#00D2BE]/30 flex items-center gap-1">
-                  <ShieldCheck size={11} /> {stats.deduplicatedCount} deduplicated
-                </span>
-              )}
+        {/* 4 REVAMPED KPI TELEMETRY CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          {/* Card 1: Total Attending Guests (Headcount) */}
+          <div className="relative group double-bezel shadow-xl overflow-hidden">
+            <div className="double-bezel-inner p-4 sm:p-5 flex flex-col justify-between h-full bg-[#12121A]/95 relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00D2BE] via-[#1fe2ce] to-[#00D2BE]" />
+              <div>
+                <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold mb-2">
+                  <span className="flex items-center gap-1.5 text-white">
+                    <span className="p-1 rounded-md bg-[#00D2BE]/15 text-[#00D2BE]">
+                      <Users size={14} />
+                    </span>
+                    TOTAL GUESTS
+                  </span>
+                  <span className="text-[10px] bg-[#00D2BE]/15 text-[#00D2BE] px-2 py-0.5 rounded-full border border-[#00D2BE]/30 font-bold uppercase tracking-wider">
+                    ATTENDING
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="font-f1-head text-4xl sm:text-5xl font-black text-white tracking-tight">
+                    {stats.totalHeadcount}
+                  </span>
+                  <span className="text-xs font-telemetry font-bold text-[#8E8E98] uppercase">
+                    Unique Guests
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-telemetry">
+                  <span className="text-[#8E8E98]">Driver + Crew:</span>
+                  <span className="text-white font-bold">{stats.confirmedDrivers} Drivers + {stats.attendingCompanions} Crew</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-telemetry text-[#8E8E98]">
+                  <span>Demographics:</span>
+                  <span className="text-[#A5A5B2]">{stats.adultsCount} Adults • {stats.kidsCount} Kids</span>
+                </div>
+                {stats.deduplicatedCount > 0 && (
+                  <div
+                    onClick={() => setShowConflictModal(true)}
+                    className="flex items-center gap-1 text-[10px] font-telemetry text-[#00D2BE] bg-[#00D2BE]/10 px-2 py-0.5 rounded border border-[#00D2BE]/20 cursor-pointer hover:bg-[#00D2BE]/20 transition-colors"
+                    title="Click to view duplicate verification audit"
+                  >
+                    <ShieldCheck size={11} className="shrink-0" />
+                    <span>{stats.deduplicatedCount} duplicate +1 excluded from count</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Card 2: Confirmed Primary Drivers */}
-          <div className="bg-[#151520]/80 border border-white/[0.08] p-4 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold">
-              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-[#00D2BE]" /> GRID SLOTS</span>
-              <span className="text-[10px] bg-white/5 text-[#8E8E98] px-2 py-0.5 rounded-full">CONFIRMED</span>
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-f1-head text-3xl sm:text-4xl font-black text-[#00D2BE]">{stats.confirmedDrivers}</span>
-              <span className="text-xs font-telemetry text-[#8E8E98]">entries</span>
-            </div>
-            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1">
-              Registered drivers
+          {/* Card 2: RSVP Submissions (Entries) */}
+          <div className="relative group double-bezel shadow-xl overflow-hidden">
+            <div className="double-bezel-inner p-4 sm:p-5 flex flex-col justify-between h-full bg-[#12121A]/95 relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-white/40 via-white/80 to-white/40" />
+              <div>
+                <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold mb-2">
+                  <span className="flex items-center gap-1.5 text-white">
+                    <span className="p-1 rounded-md bg-white/10 text-white">
+                      <CheckCircle2 size={14} />
+                    </span>
+                    RSVP ENTRIES
+                  </span>
+                  <span className="text-[10px] bg-white/10 text-white px-2 py-0.5 rounded-full border border-white/20 font-bold uppercase tracking-wider">
+                    SUBMISSIONS
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="font-f1-head text-4xl sm:text-5xl font-black text-white tracking-tight">
+                    {stats.totalEntries}
+                  </span>
+                  <span className="text-xs font-telemetry font-bold text-[#8E8E98] uppercase">
+                    Total Passes
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-telemetry">
+                  <span className="text-[#8E8E98]">Confirmed Ratio:</span>
+                  <span className="text-[#00D2BE] font-bold">{stats.confirmedDrivers} Attending ({stats.attendanceRate}%)</span>
+                </div>
+                {/* Visual Ratio Progress Bar */}
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden flex">
+                  <div
+                    className="h-full bg-[#00D2BE] rounded-full transition-all duration-500"
+                    style={{ width: `${stats.attendanceRate}%` }}
+                    title={`${stats.confirmedDrivers} confirmed`}
+                  />
+                  {stats.totalEntries > 0 && stats.dnfDrivers > 0 && (
+                    <div
+                      className="h-full bg-[#FF5E5B] transition-all duration-500"
+                      style={{ width: `${100 - stats.attendanceRate}%` }}
+                      title={`${stats.dnfDrivers} declined`}
+                    />
+                  )}
+                </div>
+                <div className="text-[10px] text-[#8E8E98] font-telemetry">
+                  Primary driver registrations on grid
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Card 3: Can't Attend (DNF) */}
-          <div className="bg-[#151520]/80 border border-white/[0.08] p-4 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold">
-              <span className="flex items-center gap-1.5"><XCircle size={14} className="text-[#FF5E5B]" /> DNF / DECLINED</span>
-              <span className="text-[10px] bg-[#FF5E5B]/10 text-[#FF5E5B] px-2 py-0.5 rounded-full border border-[#FF5E5B]/30">UNAVAILABLE</span>
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-f1-head text-3xl sm:text-4xl font-black text-[#FF5E5B]">{stats.dnfDrivers}</span>
-              <span className="text-xs font-telemetry text-[#8E8E98]">guests</span>
-            </div>
-            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1">
-              Sent birthday radio wishes
+          {/* Card 3: Declined / DNF */}
+          <div className="relative group double-bezel shadow-xl overflow-hidden">
+            <div className="double-bezel-inner p-4 sm:p-5 flex flex-col justify-between h-full bg-[#12121A]/95 relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF5E5B] via-[#ff7875] to-[#FF5E5B]" />
+              <div>
+                <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold mb-2">
+                  <span className="flex items-center gap-1.5 text-white">
+                    <span className="p-1 rounded-md bg-[#FF5E5B]/15 text-[#FF5E5B]">
+                      <XCircle size={14} />
+                    </span>
+                    DECLINED
+                  </span>
+                  <span className="text-[10px] bg-[#FF5E5B]/15 text-[#FF5E5B] px-2 py-0.5 rounded-full border border-[#FF5E5B]/30 font-bold uppercase tracking-wider">
+                    DNF
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className={`font-f1-head text-4xl sm:text-5xl font-black tracking-tight ${stats.dnfDrivers > 0 ? 'text-[#FF5E5B]' : 'text-white/80'}`}>
+                    {stats.dnfDrivers}
+                  </span>
+                  <span className="text-xs font-telemetry font-bold text-[#8E8E98] uppercase">
+                    Cannot Attend
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-telemetry">
+                  <span className="text-[#8E8E98]">Grid Status:</span>
+                  <span className={stats.dnfDrivers === 0 ? 'text-emerald-400 font-bold' : 'text-[#FF5E5B] font-bold'}>
+                    {stats.dnfDrivers === 0 ? 'Full Grid Confirmed' : `${stats.dnfDrivers} Declined Pass${stats.dnfDrivers > 1 ? 'es' : ''}`}
+                  </span>
+                </div>
+                <div className="text-[10px] text-[#8E8E98] font-telemetry">
+                  {stats.dnfDrivers === 0 ? '0% drop rate • 0 regrets received' : 'Wishes recorded on birthday pit radio'}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Card 4: Database Mode */}
-          <div className="bg-[#151520]/80 border border-white/[0.08] p-4 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold">
-              <span className="flex items-center gap-1.5"><Database size={14} className="text-[#FFB800]" /> SUPABASE CLOUD</span>
-              <button
-                onClick={() => setShowDbModal(true)}
-                className="text-[10px] text-[#00D2BE] hover:underline cursor-pointer"
-              >
-                CONFIG
-              </button>
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className={`font-f1-head text-xl font-bold uppercase italic ${rsvpService.isSupabaseConnected ? 'text-[#00D2BE]' : 'text-[#FFB800]'}`}>
-                {rsvpService.isSupabaseConnected ? 'CONNECTED' : 'LOCAL CACHE'}
-              </span>
-            </div>
-            <div className="text-[11px] text-[#8E8E98] font-telemetry mt-1 truncate">
-              {rsvpService.isSupabaseConnected ? 'Real-time database active' : 'Click Config to connect Supabase'}
+          {/* Card 4: Pit Crew (+1s / Accompanying) */}
+          <div className="relative group double-bezel shadow-xl overflow-hidden">
+            <div className="double-bezel-inner p-4 sm:p-5 flex flex-col justify-between h-full bg-[#12121A]/95 relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFB800] via-[#ffd066] to-[#FFB800]" />
+              <div>
+                <div className="flex items-center justify-between text-[#8E8E98] text-xs font-telemetry font-bold mb-2">
+                  <span className="flex items-center gap-1.5 text-white">
+                    <span className="p-1 rounded-md bg-[#FFB800]/15 text-[#FFB800]">
+                      <UserCheck size={14} />
+                    </span>
+                    PIT CREW (+1S)
+                  </span>
+                  <span className="text-[10px] bg-[#FFB800]/15 text-[#FFB800] px-2 py-0.5 rounded-full border border-[#FFB800]/30 font-bold uppercase tracking-wider">
+                    ACCOMPANYING
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="font-f1-head text-4xl sm:text-5xl font-black text-[#FFB800] tracking-tight">
+                    {stats.attendingCompanions}
+                  </span>
+                  <span className="text-xs font-telemetry font-bold text-[#8E8E98] uppercase">
+                    Active +1 Passes
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-telemetry">
+                  <span className="text-[#8E8E98]">Crew Distribution:</span>
+                  <span className="text-white font-bold">{stats.driversWithCompanionsCount} drivers bringing +1s</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-telemetry text-[#8E8E98]">
+                  <span>Gross Companions:</span>
+                  <span className="text-[#A5A5B2]">{stats.totalCompanionsListed} total listed</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -886,69 +1018,78 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
         <div className="double-bezel shadow-2xl">
           <div className="double-bezel-inner overflow-hidden">
             {/* Table Controls */}
-            <div className="p-4 border-b border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-1 bg-[#101018] p-1 rounded-full border border-white/10 w-full sm:w-auto overflow-x-auto">
+            <div className="p-4 border-b border-white/[0.08] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5">
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1 bg-[#101018] p-1 rounded-xl border border-white/10 overflow-x-auto custom-scrollbar">
                 <button
                   onClick={() => setFilterTab('all')}
-                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap ${
                     filterTab === 'all'
-                      ? 'bg-[#E10600] text-white shadow-md'
+                      ? 'bg-white/20 text-white shadow-md'
                       : 'text-[#8E8E98] hover:text-white'
                   }`}
                 >
-                  ALL ({rsvps.length})
+                  ALL ENTRIES ({rsvps.length})
                 </button>
                 <button
                   onClick={() => setFilterTab('attending')}
-                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     filterTab === 'attending'
-                      ? 'bg-[#00D2BE] text-[#0E0E14] shadow-md'
+                      ? 'bg-[#00D2BE] text-black font-black shadow-md'
                       : 'text-[#8E8E98] hover:text-white'
                   }`}
                 >
-                  CONFIRMED ({stats.confirmedDrivers})
+                  <span>CONFIRMED ({stats.confirmedDrivers})</span>
                 </button>
                 <button
                   onClick={() => setFilterTab('dnf')}
-                  className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     filterTab === 'dnf'
-                      ? 'bg-white/[0.08] text-[#FF5E5B] border border-[#FF5E5B]/40'
+                      ? 'bg-[#FF5E5B] text-white font-black shadow-md'
                       : 'text-[#8E8E98] hover:text-white'
                   }`}
                 >
-                  DNF ({stats.dnfDrivers})
+                  <span>DECLINED ({stats.dnfDrivers})</span>
                 </button>
                 <button
                   onClick={() => setFilterTab('conflicts')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-full text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-telemetry font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     filterTab === 'conflicts'
-                      ? 'bg-amber-500 text-black shadow-md'
+                      ? 'bg-amber-500 text-black font-black shadow-md'
                       : conflictRecordIds.size > 0
                       ? 'text-amber-400 hover:text-amber-300'
                       : 'text-[#8E8E98] hover:text-white'
                   }`}
                 >
-                  <AlertTriangle size={12} className={unresolvedConflicts.length > 0 ? 'animate-bounce' : ''} />
+                  <AlertTriangle size={12} className={unresolvedConflicts.length > 0 ? 'animate-bounce text-amber-400' : ''} />
                   <span>DUPLICATES ({conflictRecordIds.size})</span>
                 </button>
               </div>
 
               {/* Search & Actions */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search size={15} className="absolute left-3.5 top-2.5 text-[#8E8E98]" />
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="relative flex-1 sm:w-64 min-w-[200px]">
+                  <Search size={14} className="absolute left-3.5 top-2.5 text-[#8E8E98]" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search driver, companions..."
-                    className="w-full pl-9 pr-4 py-2 bg-[#0F0F16] border border-white/15 rounded-full text-xs font-telemetry text-white placeholder-[#555566] outline-none focus:border-[#00D2BE]"
+                    className="w-full pl-9 pr-8 py-2 bg-[#0F0F16] border border-white/15 rounded-xl text-xs font-telemetry text-white placeholder-[#555566] outline-none focus:border-[#00D2BE] transition-colors"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-[#8E8E98] hover:text-white p-0.5 rounded cursor-pointer"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
                 </div>
 
                 <button
                   onClick={handlePurgeMockData}
-                  className="px-3 py-2 bg-white/5 hover:bg-red-500/20 text-[#8E8E98] hover:text-red-400 border border-white/10 rounded-full text-xs font-telemetry cursor-pointer transition-colors whitespace-nowrap"
+                  className="px-3 py-2 bg-white/5 hover:bg-red-500/15 text-[#8E8E98] hover:text-red-400 border border-white/10 hover:border-red-500/30 rounded-xl text-xs font-telemetry cursor-pointer transition-colors whitespace-nowrap"
                   title="Remove hardcoded demo records"
                 >
                   Clear Demo Data
@@ -956,8 +1097,19 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Live Filter Telemetry Header */}
+            <div className="px-4 py-2 bg-[#0A0A10] border-b border-white/[0.04] flex items-center justify-between text-[11px] font-telemetry text-[#8E8E98]">
+              <span>
+                Showing <strong className="text-white">{filteredRsvps.length}</strong> {filteredRsvps.length === 1 ? 'entry' : 'entries'}
+                {searchQuery ? ` matching "${searchQuery}"` : ''}
+              </span>
+              <span className="text-[#00D2BE] font-bold">
+                {filteredHeadcount} Attending {filteredHeadcount === 1 ? 'Guest' : 'Guests'} in this view
+              </span>
+            </div>
+
+            {/* DESKTOP TABLE VIEW (hidden on mobile, visible on md+) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left font-telemetry text-xs">
                 <thead className="bg-[#101018] text-[#8E8E98] uppercase text-[10px] tracking-wider border-b border-white/[0.06]">
                   <tr>
@@ -991,8 +1143,15 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
 
                       return (
                         <tr key={record.id} className="hover:bg-white/[0.03] transition-colors">
-                          <td className="py-3 px-4 text-[#8E8E98] font-bold">
-                            P{idx + 1}
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              idx === 0 ? 'bg-[#FFD700]/15 text-[#FFD700] border border-[#FFD700]/40' :
+                              idx === 1 ? 'bg-[#C0C0C0]/15 text-[#C0C0C0] border border-[#C0C0C0]/40' :
+                              idx === 2 ? 'bg-[#CD7F32]/15 text-[#CD7F32] border border-[#CD7F32]/40' :
+                              'bg-white/5 text-[#8E8E98] border border-white/10'
+                            }`}>
+                              P{idx + 1}
+                            </span>
                           </td>
 
                           <td className="py-3 px-4 font-bold text-white whitespace-nowrap">
@@ -1003,6 +1162,9 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                                   DUPLICATE DRIVER
                                 </span>
                               )}
+                              <span className="text-[10px] text-[#8E8E98] font-normal">
+                                • {record.relationship || 'Guest'}
+                              </span>
                             </div>
                           </td>
 
@@ -1021,6 +1183,9 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                           <td className="py-3 px-4 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-white text-sm">{netSeats}</span>
+                              <span className="text-[10px] text-[#8E8E98]">
+                                {netSeats === 1 ? 'seat' : 'seats'}
+                              </span>
                               {deduplicatedInRecord > 0 && (
                                 <span
                                   className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1 rounded cursor-pointer"
@@ -1093,6 +1258,7 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                                     >
                                       <UserCheck size={11} />
                                       <span>{c.fullName}</span>
+                                      <span className="text-[9px] text-[#00D2BE]/70">({c.type})</span>
                                     </span>
                                   );
                                 })}
@@ -1102,48 +1268,48 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
                             )}
                           </td>
 
-                        <td className="py-3 px-4 max-w-xs text-[#C5C5CE] italic text-[11px] truncate">
-                          {record.message ? (
-                            <span className="flex items-center gap-1">
-                              <Radio size={12} className="text-[#FFB800] shrink-0" />
-                              "{record.message}"
-                            </span>
-                          ) : (
-                            <span className="text-[#555566]">—</span>
-                          )}
-                        </td>
+                          <td className="py-3 px-4 max-w-xs text-[#C5C5CE] italic text-[11px] truncate">
+                            {record.message ? (
+                              <span className="flex items-center gap-1">
+                                <Radio size={12} className="text-[#FFB800] shrink-0" />
+                                "{record.message}"
+                              </span>
+                            ) : (
+                              <span className="text-[#555566]">—</span>
+                            )}
+                          </td>
 
-                        <td className="py-3 px-4 text-[#8E8E98] text-[10px] whitespace-nowrap">
-                          {new Date(record.created_at).toLocaleDateString([], {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
+                          <td className="py-3 px-4 text-[#8E8E98] text-[10px] whitespace-nowrap">
+                            {new Date(record.created_at).toLocaleDateString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
 
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
-                            {/* Edit Button */}
-                            <button
-                              onClick={() => handleOpenEdit(record)}
-                              className="p-1.5 rounded-md bg-white/5 hover:bg-[#00D2BE]/20 text-[#8E8E98] hover:text-[#00D2BE] border border-white/10 hover:border-[#00D2BE]/40 transition-colors cursor-pointer"
-                              title="Edit registration details"
-                            >
-                              <Edit size={13} />
-                            </button>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5">
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => handleOpenEdit(record)}
+                                className="p-1.5 rounded-md bg-white/5 hover:bg-[#00D2BE]/20 text-[#8E8E98] hover:text-[#00D2BE] border border-white/10 hover:border-[#00D2BE]/40 transition-colors cursor-pointer"
+                                title="Edit registration details"
+                              >
+                                <Edit size={13} />
+                              </button>
 
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteRecord(record)}
-                              className="p-1.5 rounded-md bg-white/5 hover:bg-red-500/20 text-[#8E8E98] hover:text-red-400 border border-white/10 hover:border-red-500/40 transition-colors cursor-pointer"
-                              title="Delete record"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteRecord(record)}
+                                className="p-1.5 rounded-md bg-white/5 hover:bg-red-500/20 text-[#8E8E98] hover:text-red-400 border border-white/10 hover:border-red-500/40 transition-colors cursor-pointer"
+                                title="Delete record"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
                       );
                     })
                   )}
@@ -1151,10 +1317,145 @@ CREATE POLICY "Allow public delete for RSVPs" ON public.rsvps FOR DELETE TO anon
               </table>
             </div>
 
-            <div className="bg-[#101018] px-4 py-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-telemetry text-[#8E8E98]">
-              <span>Showing {filteredRsvps.length} of {rsvps.length} driver registrations</span>
+            {/* RESPONSIVE MOBILE CARD VIEW (visible on mobile, hidden on md+) */}
+            <div className="md:hidden divide-y divide-white/[0.06] p-3 space-y-3">
+              {filteredRsvps.length === 0 ? (
+                <div className="py-10 text-center text-[#8E8E98]">
+                  <Users size={28} className="text-[#555566] mx-auto mb-2" />
+                  <p className="font-f1-head font-bold uppercase text-white">NO DRIVERS FOUND</p>
+                  <p className="text-xs">No registrations match current criteria.</p>
+                </div>
+              ) : (
+                filteredRsvps.map((record, idx) => {
+                  const netSeats = calculateRecordHeadcount(record);
+                  const deduplicatedInRecord = Array.isArray(record.companions)
+                    ? record.companions.filter((c) => c.isDuplicate).length
+                    : 0;
+
+                  return (
+                    <div
+                      key={record.id}
+                      className="p-3.5 rounded-xl bg-[#0E0E16] border border-white/[0.08] space-y-2.5 pt-3"
+                    >
+                      {/* Card Header: Position, Driver Name, Status, Seats */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-telemetry font-bold ${
+                            idx === 0 ? 'bg-[#FFD700]/15 text-[#FFD700] border border-[#FFD700]/40' :
+                            idx === 1 ? 'bg-[#C0C0C0]/15 text-[#C0C0C0] border border-[#C0C0C0]/40' :
+                            idx === 2 ? 'bg-[#CD7F32]/15 text-[#CD7F32] border border-[#CD7F32]/40' :
+                            'bg-white/5 text-[#8E8E98] border border-white/10'
+                          }`}>
+                            P{idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-white text-sm truncate flex items-center gap-1.5">
+                              <span>{record.guest_name}</span>
+                              {record.isDuplicate && (
+                                <span className="px-1 py-0.2 rounded bg-red-500/20 text-red-300 text-[9px] border border-red-500/40">
+                                  DUPLICATE
+                                </span>
+                              )}
+                            </h4>
+                            <span className="text-[11px] font-telemetry text-[#8E8E98]">
+                              {record.relationship || 'Guest'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {record.attending ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00D2BE]/15 text-[#00D2BE] border border-[#00D2BE]/30 text-[10px] font-bold">
+                              <CheckCircle2 size={11} /> CONFIRMED
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF5E5B]/15 text-[#FF5E5B] border border-[#FF5E5B]/30 text-[10px] font-bold">
+                              <XCircle size={11} /> DNF
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded bg-white/10 text-white text-xs font-telemetry font-bold">
+                            {netSeats} {netSeats === 1 ? 'seat' : 'seats'}
+                            {deduplicatedInRecord > 0 && (
+                              <span className="text-amber-400 ml-1 text-[10px]">(-{deduplicatedInRecord})</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Companions Pill Strip (if any) */}
+                      {record.attending && Array.isArray(record.companions) && record.companions.length > 0 && (
+                        <div className="pt-2 border-t border-white/[0.06]">
+                          <div className="text-[10px] uppercase font-bold text-[#8E8E98] mb-1">
+                            Pit Crew (+1s):
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {record.companions.map((c) => {
+                              if (c.isDuplicate) {
+                                return (
+                                  <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => setShowConflictModal(true)}
+                                    className="px-2 py-0.5 rounded-full text-[10px] border bg-amber-500/15 text-amber-300/80 border-amber-500/30 line-through flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <ShieldAlert size={10} className="shrink-0 text-amber-400" />
+                                    <span>{c.fullName} [EXCLUDED]</span>
+                                  </button>
+                                );
+                              }
+                              return (
+                                <span
+                                  key={c.id}
+                                  className="px-2 py-0.5 rounded-full text-[10px] border bg-[#00D2BE]/10 text-[#00D2BE] border-[#00D2BE]/30 flex items-center gap-1"
+                                >
+                                  <UserCheck size={10} />
+                                  <span>{c.fullName} ({c.type})</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Radio message (if any) */}
+                      {record.message && (
+                        <div className="p-2 rounded-lg bg-black/40 border border-white/[0.04] text-[11px] text-[#C5C5CE] italic flex items-center gap-1.5">
+                          <Radio size={12} className="text-[#FFB800] shrink-0" />
+                          <span className="truncate">"{record.message}"</span>
+                        </div>
+                      )}
+
+                      {/* Footer: Date & Actions */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-[10px] font-telemetry text-[#8E8E98]">
+                        <span>{new Date(record.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenEdit(record)}
+                            className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-[#00D2BE]/20 text-[#8E8E98] hover:text-[#00D2BE] border border-white/10 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit size={11} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRecord(record)}
+                            className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-red-500/20 text-[#8E8E98] hover:text-red-400 border border-white/10 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={11} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Table Footer */}
+            <div className="bg-[#101018] px-4 py-3 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-telemetry text-[#8E8E98]">
+              <span>
+                Showing {filteredRsvps.length} of {rsvps.length} entries ({filteredHeadcount} attending guests)
+              </span>
               <span className="text-[#00D2BE] font-bold">
-                {rsvpService.isSupabaseConnected ? 'CONNECTED TO SUPABASE' : 'LOCAL CACHE MODE'}
+                {rsvpService.isSupabaseConnected ? 'CONNECTED TO SUPABASE CLOUD' : 'LOCAL CACHE MODE'}
               </span>
             </div>
           </div>
