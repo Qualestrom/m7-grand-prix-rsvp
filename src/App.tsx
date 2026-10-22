@@ -120,7 +120,7 @@ function App() {
             exit={{ opacity: 0, y: -14 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <PaddockPass />
+            <PaddockPass onNavigateToAdmin={navigateToAdmin} />
           </motion.div>
         )}
 
